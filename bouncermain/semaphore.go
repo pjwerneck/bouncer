@@ -1,0 +1,162 @@
+package bouncermain
+
+import (
+	"sync"
+	"sync/atomic"
+	"time"
+
+	"github.com/satori/go.uuid"
+)
+
+type Semaphore struct {
+	Name     string
+	Size     uint64
+	Keys     map[string]uint64
+	acquireC chan bool
+	timers   map[string]*time.Timer
+	mu       *sync.Mutex
+	Stats    *Metrics
+}
+
+var semaphores = map[string]*Semaphore{}
+var semaphoresMutex = &sync.RWMutex{}
+
+func newSemaphore(name string, size uint64) (semaphore *Semaphore) {
+	semaphoresMutex.Lock()
+	defer semaphoresMutex.Unlock()
+
+	semaphore, ok := semaphores[name]
+	if ok {
+		return semaphore
+	}
+
+	semaphore = &Semaphore{
+		Name:     name,
+		Size:     uint64(size),
+		Keys:     make(map[string]uint64),
+		acquireC: make(chan bool, size),
+		timers:   make(map[string]*time.Timer),
+		mu:       &sync.Mutex{},
+		Stats:    &Metrics{CreatedAt: time.Now().Format(time.RFC3339)},
+	}
+
+	semaphores[name] = semaphore
+
+	return semaphore
+}
+
+func getSemaphore(name string, size uint64) (semaphore *Semaphore) {
+	semaphoresMutex.RLock()
+	semaphore, ok := semaphores[name]
+	semaphoresMutex.RUnlock()
+
+	if !ok {
+		semaphore = newSemaphore(name, size)
+	}
+
+	semaphore.setSize(size)
+
+	return semaphore
+}
+
+func (semaphore *Semaphore) setSize(size uint64) uint64 {
+	old := atomic.SwapUint64(&semaphore.Size, size)
+
+	if old != size {
+		logger.Noticef("%s - semaphore resized from %d to %d", semaphore.Name, old, size)
+	}
+
+	return old
+}
+
+func (semaphore *Semaphore) getSize() uint64 {
+	return atomic.LoadUint64(&semaphore.Size)
+}
+
+func (semaphore *Semaphore) getKey(key string) (exp uint64, ok bool) {
+	semaphore.mu.Lock()
+	defer semaphore.mu.Unlock()
+	exp, ok = semaphore.Keys[key]
+	return
+}
+
+func (semaphore *Semaphore) setKey(key string, exp uint64) bool {
+	semaphore.mu.Lock()
+	defer semaphore.mu.Unlock()
+
+	if int(semaphore.getSize())-len(semaphore.Keys) <= 0 {
+		return false
+	}
+
+	semaphore.Keys[key] = exp
+	if exp > 0 {
+		d := time.Duration(exp) * time.Second
+		semaphore.timers[key] = time.AfterFunc(d,
+			func() {
+				semaphore.delKey(key)
+				atomic.AddUint64(&semaphore.Stats.Expired, 1)
+			})
+	}
+
+	return true
+}
+
+func (semaphore *Semaphore) delKey(key string) {
+	semaphore.mu.Lock()
+	defer semaphore.mu.Unlock()
+
+	if _, ok := semaphore.Keys[key]; ok {
+		delete(semaphore.Keys, key)
+	}
+
+	if t, ok := semaphore.timers[key]; ok {
+		t.Stop()
+		delete(semaphore.timers, key)
+	}
+}
+
+func (semaphore *Semaphore) Acquire(timeout time.Duration, expire uint64, key string) (token string, err error) {
+	// generate a random uuid as key if not provided
+	if key == "" {
+		key = uuid.NewV4().String()
+	}
+
+	// if there's an active token with this key, reacquire and return immediately
+	_, ok := semaphore.getKey(key)
+
+	if ok {
+		token = key
+		atomic.AddUint64(&semaphore.Stats.Reacquired, 1)
+		return token, nil
+	}
+
+	// otherwise, check for available slots
+	started := time.Now()
+	for {
+
+		if semaphore.setKey(key, expire) {
+			token = key
+			atomic.AddUint64(&semaphore.Stats.Acquired, 1)
+			break
+		}
+
+		if time.Since(started) >= timeout {
+			atomic.AddUint64(&semaphore.Stats.TimedOut, 1)
+			return "", ErrTimedOut
+		}
+
+		time.Sleep(time.Duration(100) * time.Millisecond)
+	}
+
+	return token, nil
+}
+
+func (semaphore *Semaphore) Release(key string) (string, error) {
+	semaphore.delKey(key)
+	atomic.AddUint64(&semaphore.Stats.Released, 1)
+	return key, nil
+}
+
+func (semaphore *Semaphore) GetStats() *Metrics {
+	return semaphore.Stats
+}
