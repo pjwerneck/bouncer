@@ -30,7 +30,7 @@ func newTokenBucket(name string, size uint64) (bucket *TokenBucket) {
 	bucket = &TokenBucket{
 		Name:     name,
 		Size:     size,
-		Tokens:   int64(size), // an uint64 overflows when decrement below zero
+		Tokens:   int64(size), // an uint64 overflows when decremented below zero
 		acquireC: make(chan bool, 1),
 		timer:    time.NewTimer(time.Second),
 		Stats:    &Metrics{CreatedAt: time.Now().Format(time.RFC3339)},
@@ -71,20 +71,20 @@ func (bucket *TokenBucket) getSize() uint {
 
 func (bucket *TokenBucket) refill() {
 	for {
-		// decrement usage by one
-		tokens := atomic.AddInt64(&bucket.Tokens, ^int64(0))
+		size := bucket.getSize()
 
-		if tokens >= 0 {
-			// if ok, make token available and continue
+		for size > 0 {
+			// make token available
 			bucket.acquireC <- true
 
-		} else {
-			// otherwise, wait and reset
-			<-bucket.timer.C
-			// and refill
-			atomic.StoreInt64(&bucket.Tokens, int64(atomic.LoadUint64(&bucket.Size)))
-			bucket.timer.Reset(time.Second)
+			size--
 		}
+
+		// wait
+		<-bucket.timer.C
+
+		// and reset the timer
+		bucket.timer.Reset(time.Second)
 	}
 }
 
@@ -102,7 +102,7 @@ func (bucket *TokenBucket) Acquire(timeout time.Duration) (token string, err err
 		token = "OK"
 		return token, nil
 	} else {
-		// not supposed to be here, as all values in recv are true
+		// not supposed to be here, as all values in acquireC are true
 		panic("we're not supposed to be here")
 	}
 
