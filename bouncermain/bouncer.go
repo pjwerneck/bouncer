@@ -4,11 +4,14 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"time"
 
 	"github.com/op/go-logging"
 )
 
 var logger = logging.MustGetLogger("bouncer")
+
+var decoder = newDecoder()
 
 var format = logging.MustStringFormatter(
 	"%{color}%{time:15:04:05.000} %{level:.4s} %{id:03x}%{color:reset} %{message}",
@@ -28,6 +31,13 @@ func Main() {
 
 	logger.Info("Starting...")
 
-	logger.Fatal(http.ListenAndServe(":8080", router()))
+	server := &http.Server{
+		Addr:         ":8080",
+		Handler:      router(),
+		ReadTimeout:  10 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+
+	logger.Fatal(server.ListenAndServe())
 
 }
