@@ -9,31 +9,23 @@ import (
 type TokenBucket struct {
 	Name     string
 	Size     uint64
-	Tokens   int64
+	Interval time.Duration
+	Stats    *Metrics
 	acquireC chan bool
 	timer    *time.Timer
-	Stats    *Metrics
 }
 
 var buckets = map[string]*TokenBucket{}
-var bucketsMutex = &sync.RWMutex{}
+var bucketsMutex = &sync.Mutex{}
 
-func newTokenBucket(name string, size uint64) (bucket *TokenBucket) {
-	bucketsMutex.Lock()
-	defer bucketsMutex.Unlock()
-
-	bucket, ok := buckets[name]
-	if ok {
-		return bucket
-	}
-
+func newTokenBucket(name string, size uint64, interval uint64) (bucket *TokenBucket) {
 	bucket = &TokenBucket{
 		Name:     name,
 		Size:     size,
-		Tokens:   int64(size), // an uint64 overflows when decremented below zero
-		acquireC: make(chan bool, 1),
-		timer:    time.NewTimer(time.Second),
+		Interval: time.Millisecond * time.Duration(interval),
 		Stats:    &Metrics{CreatedAt: time.Now().Format(time.RFC3339)},
+		acquireC: make(chan bool, 1),
+		timer:    time.NewTimer(time.Duration(interval)),
 	}
 
 	buckets[name] = bucket
@@ -44,34 +36,25 @@ func newTokenBucket(name string, size uint64) (bucket *TokenBucket) {
 	return bucket
 }
 
-func getTokenBucket(name string, size uint64) (bucket *TokenBucket) {
-	// most of the time we'll hold the R lock for just a sec
-	bucketsMutex.RLock()
-	bucket, ok := buckets[name]
-	bucketsMutex.RUnlock()
+func getTokenBucket(name string, size uint64, interval uint64) (bucket *TokenBucket) {
+	bucketsMutex.Lock()
+	defer bucketsMutex.Unlock()
 
+	bucket, ok := buckets[name]
 	if !ok {
+		bucket = newTokenBucket(name, size, interval)
 		logger.Infof("New token bucket: name=%v, size=%v", name, size)
-		bucket = newTokenBucket(name, size)
 	}
 
-	bucket.setSize(size)
+	bucket.Size = size
+	bucket.Interval = time.Millisecond * time.Duration(interval)
 
 	return bucket
 }
 
-func (bucket *TokenBucket) setSize(size uint64) {
-	atomic.StoreUint64(&bucket.Size, size)
-	atomic.StoreUint64(&bucket.Stats.Nominal, size)
-}
-
-func (bucket *TokenBucket) getSize() uint {
-	return uint(atomic.LoadUint64(&bucket.Size))
-}
-
 func (bucket *TokenBucket) refill() {
 	for {
-		size := bucket.getSize()
+		size := bucket.Size
 
 		for size > 0 {
 			// make token available
@@ -84,7 +67,7 @@ func (bucket *TokenBucket) refill() {
 		<-bucket.timer.C
 
 		// and reset the timer
-		bucket.timer.Reset(time.Second)
+		bucket.timer.Reset(time.Duration(bucket.Interval))
 	}
 }
 

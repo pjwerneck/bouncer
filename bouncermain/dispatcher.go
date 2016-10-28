@@ -4,28 +4,17 @@ import ()
 
 type DispatcherFunc func(*Request, *Reply) error
 
-var dispatcherTable = map[string]map[string]DispatcherFunc{
-	"tokenbucket": map[string]DispatcherFunc{
-		"acquire": TokenBucketAcquire,
-		"stats":   TokenBucketStats,
-	},
-	"semaphore": map[string]DispatcherFunc{
-		"acquire": SemaphoreAcquire,
-		"release": SemaphoreRelease,
-	},
-	"mutex": map[string]DispatcherFunc{
-		"acquire": MutexAcquire,
-		"release": MutexRelease,
-	},
+var dispatcherTable = map[string]DispatcherFunc{
+	"tokenbucket.get":   TokenBucketGet,
+	"semaphore.acquire": SemaphoreAcquire,
+	"semaphore.release": SemaphoreRelease,
+	"event.wait":        EventWait,
+	"event.send":        EventSend,
+	"watchdog.kick":     WatchdogKick,
 }
 
 func dispatchRequest(req *Request, rep *Reply) error {
-	type_, ok := dispatcherTable[req.Type_]
-	if !ok {
-		return ErrInvalidType
-	}
-
-	method, ok := type_[req.Method]
+	method, ok := dispatcherTable[req.Method]
 	if !ok {
 		return ErrInvalidMethod
 	}
@@ -33,7 +22,7 @@ func dispatchRequest(req *Request, rep *Reply) error {
 	return method(req, rep)
 }
 
-func TokenBucketAcquire(req *Request, rep *Reply) error {
+func TokenBucketGet(req *Request, rep *Reply) error {
 
 	if req.Size == 0 {
 		return ErrSizeRequired
@@ -43,29 +32,37 @@ func TokenBucketAcquire(req *Request, rep *Reply) error {
 		return ErrInvalidMaxWait
 	}
 
-	bucket := getTokenBucket(req.Name, req.Size)
+	if req.Interval == 0 {
+		req.Interval = 1000
+	}
 
-	token, err := bucket.Acquire(req.MaxWaitTime)
+	if req.Interval < 0 {
+		return ErrInvalidInterval
+	}
+
+	bucket := getTokenBucket(req.Name, req.Size, req.Interval)
+
+	_, err := bucket.Acquire(req.MaxWaitTime)
 	if err != nil {
 		return err
 	}
 
-	rep.Key = token
+	rep.Body = ""
+	rep.Status = 204
 	return nil
 }
 
 func TokenBucketStats(req *Request, rep *Reply) error {
-	if req.Name == "" {
-		return ErrNameRequired
-	}
+	// if req.Name == "" {
+	// 	return ErrNameRequired
+	// }
 
-	// we don't use getTokenBucket here to avoid creating a new bucket
-	bucket, ok := buckets[req.Name]
-	if !ok {
-		return ErrNotFound
-	}
+	// // we don't use getTokenBucket here to avoid creating a new bucket
+	// bucket, ok := buckets[req.Name]
+	// if !ok {
+	// 	return ErrNotFound
+	// }
 
-	rep.Stats = bucket.GetStats()
 	return nil
 }
 
@@ -89,7 +86,8 @@ func SemaphoreAcquire(req *Request, rep *Reply) error {
 		return err
 	}
 
-	rep.Key = token
+	rep.Body = token
+	rep.Status = 200
 
 	return nil
 }
@@ -110,11 +108,11 @@ func SemaphoreRelease(req *Request, rep *Reply) error {
 		return err
 	}
 
-	rep.Key = token
+	rep.Body = token
 	return nil
 }
 
-func MutexAcquire(req *Request, rep *Reply) error {
+func EventWait(req *Request, rep *Reply) error {
 	if req.Name == "" {
 		return ErrNameRequired
 	}
@@ -123,34 +121,55 @@ func MutexAcquire(req *Request, rep *Reply) error {
 		return ErrInvalidMaxWait
 	}
 
-	semaphore := getMutex(req.Name)
+	event := getEvent(req.Name)
 
-	token, err := semaphore.Acquire(req.MaxWaitTime, req.Expire, req.Key)
+	message, err := event.Wait(req.MaxWaitTime)
 	if err != nil {
 		return err
 	}
 
-	rep.Key = token
+	rep.Body = message
+	rep.Status = 200
 
 	return nil
 }
 
-func MutexRelease(req *Request, rep *Reply) error {
+func EventSend(req *Request, rep *Reply) error {
 	if req.Name == "" {
 		return ErrNameRequired
 	}
 
-	if req.Key == "" {
-		return ErrKeyRequired
-	}
+	event := getEvent(req.Name)
 
-	semaphore := getMutex(req.Name)
-
-	token, err := semaphore.Release(req.Key)
+	err := event.Send(req.Message)
 	if err != nil {
 		return err
 	}
 
-	rep.Key = token
+	rep.Body = ""
+	rep.Status = 204
+
+	return nil
+}
+
+func WatchdogKick(req *Request, rep *Reply) error {
+	if req.Name == "" {
+		return ErrNameRequired
+	}
+
+	if req.Interval < 1 {
+		return ErrInvalidInterval
+	}
+
+	watchdog := getWatchdog(req.Name, req.Interval)
+
+	err := watchdog.Kick(req.Interval)
+	if err != nil {
+		return err
+	}
+
+	rep.Body = ""
+	rep.Status = 204
+
 	return nil
 }
