@@ -1,8 +1,5 @@
 package main
 
-//go:generate ffjson bouncermain/reqrep.go
-//go:generate ffjson bouncermain/metrics.go
-
 import (
 	"github.com/pjwerneck/bouncer/bouncermain"
 

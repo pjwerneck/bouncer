@@ -42,7 +42,7 @@ func TokenBucketGet(req *Request, rep *Reply) error {
 
 	bucket := getTokenBucket(req.Name, req.Size, req.Interval)
 
-	_, err := bucket.Acquire(req.MaxWaitTime)
+	_, err := bucket.Acquire(req.MaxWait)
 	if err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func SemaphoreAcquire(req *Request, rep *Reply) error {
 
 	semaphore := getSemaphore(req.Name, req.Size)
 
-	token, err := semaphore.Acquire(req.MaxWaitTime, req.Expire, req.Key)
+	token, err := semaphore.Acquire(req.MaxWait, req.Expire, req.Key)
 	if err != nil {
 		return err
 	}
@@ -123,7 +123,7 @@ func EventWait(req *Request, rep *Reply) error {
 
 	event := getEvent(req.Name)
 
-	message, err := event.Wait(req.MaxWaitTime)
+	message, err := event.Wait(req.MaxWait)
 	if err != nil {
 		return err
 	}

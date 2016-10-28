@@ -18,14 +18,14 @@ type TokenBucket struct {
 var buckets = map[string]*TokenBucket{}
 var bucketsMutex = &sync.Mutex{}
 
-func newTokenBucket(name string, size uint64, interval uint64) (bucket *TokenBucket) {
+func newTokenBucket(name string, size uint64, interval time.Duration) (bucket *TokenBucket) {
 	bucket = &TokenBucket{
 		Name:     name,
 		Size:     size,
-		Interval: time.Millisecond * time.Duration(interval),
+		Interval: interval,
 		Stats:    &Metrics{CreatedAt: time.Now().Format(time.RFC3339)},
 		acquireC: make(chan bool, 1),
-		timer:    time.NewTimer(time.Duration(interval)),
+		timer:    time.NewTimer(interval),
 	}
 
 	buckets[name] = bucket
@@ -36,7 +36,7 @@ func newTokenBucket(name string, size uint64, interval uint64) (bucket *TokenBuc
 	return bucket
 }
 
-func getTokenBucket(name string, size uint64, interval uint64) (bucket *TokenBucket) {
+func getTokenBucket(name string, size uint64, interval time.Duration) (bucket *TokenBucket) {
 	bucketsMutex.Lock()
 	defer bucketsMutex.Unlock()
 
@@ -47,7 +47,7 @@ func getTokenBucket(name string, size uint64, interval uint64) (bucket *TokenBuc
 	}
 
 	bucket.Size = size
-	bucket.Interval = time.Millisecond * time.Duration(interval)
+	bucket.Interval = interval
 
 	return bucket
 }
@@ -65,9 +65,10 @@ func (bucket *TokenBucket) refill() {
 
 		// wait
 		<-bucket.timer.C
+		logger.Debugf("tokenbucket %v refill", bucket.Name)
 
 		// and reset the timer
-		bucket.timer.Reset(time.Duration(bucket.Interval))
+		bucket.timer.Reset(bucket.Interval)
 	}
 }
 

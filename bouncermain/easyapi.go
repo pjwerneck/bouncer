@@ -6,11 +6,8 @@ import (
 	//"strconv"
 	"time"
 
-	"github.com/gorilla/schema"
 	"github.com/julienschmidt/httprouter"
 )
-
-var decoder = schema.NewDecoder()
 
 func APIResponse(w http.ResponseWriter, r *http.Request, rep Reply) {
 	w.WriteHeader(rep.Status)
@@ -20,7 +17,11 @@ func APIResponse(w http.ResponseWriter, r *http.Request, rep Reply) {
 func EasyApi(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 	values := r.URL.Query()
 
-	req := Request{MaxWait: 60, Arrival: time.Now()}
+	req := Request{
+		Interval: time.Duration(1) * time.Second,
+		MaxWait:  time.Duration(60) * time.Second,
+		Arrival:  time.Now(),
+	}
 	rep := Reply{Status: 200}
 
 	err := decoder.Decode(&req, values)
@@ -38,7 +39,6 @@ func EasyApi(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 		return
 	}
 
-	req.MaxWaitTime = time.Duration(req.MaxWait) * time.Second
 	err = dispatchRequest(&req, &rep)
 	if err != nil {
 		rep.Body = err.Error()

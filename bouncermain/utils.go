@@ -28,6 +28,7 @@ func SetField(s interface{}, f string, v interface{}) error {
 
 func RecvTimeout(ch <-chan bool, d time.Duration) (v bool, err error) {
 	switch {
+
 	case d < 0:
 		// timeout negative, wait forever
 		v = <-ch

@@ -38,16 +38,16 @@ func (watchdog *Watchdog) watch() {
 	logger.Info("watchdog triggered")
 }
 
-func (watchdog *Watchdog) reset(interval uint64) {
+func (watchdog *Watchdog) reset(interval time.Duration) {
 	watchdog.timer.Stop()
-	watchdog.timer.Reset(time.Millisecond * time.Duration(interval))
+	watchdog.timer.Reset(interval)
 	logger.Debug("timer reset")
 
 	go watchdog.watch()
 
 }
 
-func getWatchdog(name string, interval uint64) (watchdog *Watchdog) {
+func getWatchdog(name string, interval time.Duration) (watchdog *Watchdog) {
 	watchdogsMutex.Lock()
 	defer watchdogsMutex.Unlock()
 
@@ -60,7 +60,7 @@ func getWatchdog(name string, interval uint64) (watchdog *Watchdog) {
 	return watchdog
 }
 
-func (watchdog *Watchdog) Kick(interval uint64) (err error) {
+func (watchdog *Watchdog) Kick(interval time.Duration) (err error) {
 	watchdog.mu.Lock()
 	defer watchdog.mu.Unlock()
 
