@@ -5,24 +5,29 @@
 [![Build Status](https://travis-ci.org/pjwerneck/bouncer.svg?branch=master)](https://travis-ci.org/pjwerneck/bouncer)
 
 
-
 **WARNING: This is alpha code and may not be suitable for production usage.**
 
 This is a simple RPC service to provide throttling, rate-limiting, and synchronization for distributed applications. It's intended as a replacement for makeshift solutions using memcached or Redis.
 
 ## Examples
 
-#### *"I need to limit the number of operations to 20 per second"*
+#### *"I want to limit something to only one operation per second"*
 
 You need a token bucket. Just do this before each operation:
 
+    $ curl http://myhost:5505/v1/tokenbucket/myapp/acquire
+
+#### *"How to increase the limit to twenty per second?"*
+
+Use `size=20`:
+
     $ curl http://myhost:5505/v1/tokenbucket/myapp/acquire?size=20
 
-#### *"But I can't have all 20 starting at the same time!"*
+#### *"But I can't have all twenty starting at the same time!"*
 
-If you don't want bursts of activity, reduce the `size` and adjust the `interval`:
+If you don't want bursts of activity, set interval to `1/rate`:
 
-    $ curl http://myhost:5505/v1/tokenbucket/myapp/acquire?size=1&interval=50
+    $ curl http://myhost:5505/v1/tokenbucket/myapp/acquire?interval=50
 
 #### *"What if I have a resource that can be used by only one client at a time?"*
 
@@ -32,15 +37,15 @@ Use a semaphore:
     $ # do your stuff
     $ curl http://myhost:5505/v1/semaphore/myapp/release?key=$KEY
 
-#### *"Now I need to limit it to 20 concurrent clients."*
+#### *"Now I need to limit it to ten concurrent clients."*
 
-Use a semaphore with `size=20`:
+Use a semaphore with `size=10`:
 
-    $ $KEY = curl http://myhost:5505/v1/semaphore/myapp/acquire?size=20
+    $ $KEY = curl http://myhost:5505/v1/semaphore/myapp/acquire?size=10
     $ # do your stuff
     $ curl http://myhost:5505/v1/semaphore/myapp/release?key=$KEY
 
-#### *"I have many clients that must wait for something else to finish."*
+#### *"I have some clients that must wait for something else to finish."*
 
 You can use an event:
 
@@ -82,9 +87,9 @@ The max time to wait for a response. The default is `-1`, wait forever. A value 
 
 **`size=[integer]`**
 
-The size of `tokenbucket` and `semaphore`. It must be greater than zero.
+The size of `tokenbucket` and `semaphore`. The default is `1`. It must be greater than zero.
 
-Keep in mind that changing the size of a controller affects its current state. For instance, if you reduce or increase the size of a tokenbucket, it will take into account the tokens already acquired in the current interval. If you reduce the size a semaphore, a client won't be able to acquire a hold until the extra clients were released.
+> Keep in mind that changing the size of a controller affects its current state. For instance, if you reduce or increase the size of a tokenbucket, it will take into account the tokens already acquired in the current interval. If you reduce the size a semaphore, a client won't be able to acquire a hold until the extra clients were released.
 
 
 ### Success Responses
@@ -117,7 +122,7 @@ The current state of the controller is incompatible with this request.
 The `tokenbucket` is an implementation of the Token Bucket algorithm. The bucket has a limited size, and every `interval` the bucket is refilled to capacity with tokens. Each `tokenbucket.get` request takes a token out of the bucket, or waits for a token to be added if the bucket is empty.
 
 ### Acquire
-***`/v1/tokenbucket/<name>/acquire <size> <interval=1000> <maxwait=-1>`***
+***`/v1/tokenbucket/<name>/acquire <size=1> <interval=1000> <maxwait=-1>`***
 
 In most cases you can just set `size` to the desired number of requests per second.
 
@@ -135,7 +140,7 @@ Bursts of activity can happen if there are many clients waiting refill. If that'
 A `semaphore` can be used to control concurrent access to shared resources.
 
 ### Acquire
-***`/v1/semaphore/<name>/acquire <size> <key=?> <expires=60000> <maxwait=-1>`***
+***`/v1/semaphore/<name>/acquire <size=1> <key=?> <expires=60000> <maxwait=-1>`***
 
 A semaphore has a number of slots equal to `size`. The `semaphore.acquire` method stores the `key` value in the next available slot. If there are no available slots, the request waits until `maxwait`.
 
