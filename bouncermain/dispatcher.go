@@ -23,7 +23,6 @@ func dispatchRequest(req *Request, rep *Reply) error {
 }
 
 func TokenBucketGet(req *Request, rep *Reply) error {
-
 	if req.Size == 0 {
 		return ErrSizeRequired
 	}
@@ -32,22 +31,17 @@ func TokenBucketGet(req *Request, rep *Reply) error {
 		return ErrInvalidMaxWait
 	}
 
-	if req.Interval == 0 {
-		req.Interval = 1000
-	}
-
 	if req.Interval < 0 {
 		return ErrInvalidInterval
 	}
 
 	bucket := getTokenBucket(req.Name, req.Size, req.Interval)
 
-	_, err := bucket.Acquire(req.MaxWait)
+	err := bucket.Acquire(req.MaxWait)
 	if err != nil {
 		return err
 	}
 
-	rep.Body = ""
 	rep.Status = 204
 	return nil
 }

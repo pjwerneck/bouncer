@@ -24,7 +24,7 @@ func newTokenBucket(name string, size uint64, interval time.Duration) (bucket *T
 		Size:     size,
 		Interval: interval,
 		Stats:    &Metrics{CreatedAt: time.Now().Format(time.RFC3339)},
-		acquireC: make(chan bool, 1),
+		acquireC: make(chan bool),
 		timer:    time.NewTimer(interval),
 	}
 
@@ -53,44 +53,33 @@ func getTokenBucket(name string, size uint64, interval time.Duration) (bucket *T
 }
 
 func (bucket *TokenBucket) refill() {
+	var n uint64
 	for {
-		size := bucket.Size
-
-		for size > 0 {
+		// bucket size being changed midloop is not a problem, since
+		// we want size changes to take effect immediately
+		for n = 0; n < bucket.Size; n++ {
 			// make token available
 			bucket.acquireC <- true
-
-			size--
 		}
 
 		// wait
 		<-bucket.timer.C
-		logger.Debugf("tokenbucket %v refill", bucket.Name)
 
 		// and reset the timer
 		bucket.timer.Reset(bucket.Interval)
 	}
 }
 
-func (bucket *TokenBucket) Acquire(timeout time.Duration) (token string, err error) {
+func (bucket *TokenBucket) Acquire(timeout time.Duration) (err error) {
 
-	acquired, err := RecvTimeout(bucket.acquireC, timeout)
+	_, err = RecvTimeout(bucket.acquireC, timeout)
 	if err != nil {
 		atomic.AddUint64(&bucket.Stats.TimedOut, 1)
-		return token, err
+		return err
 	}
 
-	// if token is valid, just return a valid token
-	if acquired {
-		atomic.AddUint64(&bucket.Stats.Acquired, 1)
-		token = "OK"
-		return token, nil
-	} else {
-		// not supposed to be here, as all values in acquireC are true
-		panic("we're not supposed to be here")
-	}
-
-	return token, nil
+	atomic.AddUint64(&bucket.Stats.Acquired, 1)
+	return nil
 }
 
 func (bucket *TokenBucket) GetStats() *Metrics {
