@@ -32,7 +32,7 @@ func Main() {
 	logger.Info("Starting...")
 
 	server := &http.Server{
-		Addr:         ":8080",
+		Addr:         ":5505",
 		Handler:      Router(),
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
