@@ -2,17 +2,14 @@ package bouncermain
 
 import (
 	"sync"
-	//"sync/atomic"
 	"time"
 )
 
 type Watchdog struct {
-	Name  string
-	timer *time.Timer
-	mu    *sync.Mutex
-
-	resetC  chan bool
-	trigger chan bool
+	Name   string
+	timer  *time.Timer
+	mu     *sync.Mutex
+	resetC chan bool
 }
 
 var watchdogs = map[string]*Watchdog{}
@@ -20,9 +17,10 @@ var watchdogsMutex = &sync.Mutex{}
 
 func newWatchdog(name string, interval time.Duration) (watchdog *Watchdog) {
 	watchdog = &Watchdog{
-		Name:  name,
-		timer: time.NewTimer(interval),
-		mu:    &sync.Mutex{},
+		Name:   name,
+		timer:  time.NewTimer(interval),
+		mu:     &sync.Mutex{},
+		resetC: make(chan bool),
 	}
 
 	watchdogs[name] = watchdog
@@ -34,17 +32,20 @@ func newWatchdog(name string, interval time.Duration) (watchdog *Watchdog) {
 }
 
 func (watchdog *Watchdog) watch() {
-	<-watchdog.timer.C
-	logger.Info("watchdog triggered")
+	select {
+	case <-watchdog.timer.C:
+		logger.Info("watchdog triggered")
+	case <-watchdog.resetC:
+	}
 }
 
 func (watchdog *Watchdog) reset(interval time.Duration) {
-	watchdog.timer.Stop()
+	if watchdog.timer.Stop() {
+		watchdog.resetC <- true
+	}
 	watchdog.timer.Reset(interval)
-	logger.Debug("timer reset")
 
 	go watchdog.watch()
-
 }
 
 func getWatchdog(name string, interval time.Duration) (watchdog *Watchdog) {
