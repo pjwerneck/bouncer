@@ -36,7 +36,12 @@ func newTokenBucket(name string, size uint64, interval time.Duration) (bucket *T
 	return bucket
 }
 
-func getTokenBucket(name string, size uint64, interval time.Duration) (bucket *TokenBucket) {
+func getTokenBucket(name string, size uint64, interval time.Duration) (bucket *TokenBucket, err error) {
+	if size == 0 {
+		err = ErrInvalidSize
+		return
+	}
+
 	bucketsMutex.Lock()
 	defer bucketsMutex.Unlock()
 
@@ -49,7 +54,7 @@ func getTokenBucket(name string, size uint64, interval time.Duration) (bucket *T
 	bucket.Size = size
 	bucket.Interval = interval
 
-	return bucket
+	return
 }
 
 func (bucket *TokenBucket) refill() {

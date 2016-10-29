@@ -15,10 +15,10 @@ type Watchdog struct {
 var watchdogs = map[string]*Watchdog{}
 var watchdogsMutex = &sync.Mutex{}
 
-func newWatchdog(name string, interval time.Duration) (watchdog *Watchdog) {
+func newWatchdog(name string, expires time.Duration) (watchdog *Watchdog) {
 	watchdog = &Watchdog{
 		Name:   name,
-		timer:  time.NewTimer(interval),
+		timer:  time.NewTimer(expires),
 		mu:     &sync.Mutex{},
 		resetC: make(chan bool),
 	}
@@ -38,34 +38,39 @@ func (watchdog *Watchdog) watch() {
 	}
 }
 
-func (watchdog *Watchdog) reset(interval time.Duration) {
+func (watchdog *Watchdog) reset(expires time.Duration) {
 	if watchdog.timer.Stop() {
 		watchdog.resetC <- true
 	}
-	watchdog.timer.Reset(interval)
+	watchdog.timer.Reset(expires)
 
 	go watchdog.watch()
 }
 
-func getWatchdog(name string, interval time.Duration) (watchdog *Watchdog) {
+func getWatchdog(name string, expires time.Duration) (watchdog *Watchdog, err error) {
 	watchdogsMutex.Lock()
 	defer watchdogsMutex.Unlock()
 
 	watchdog, ok := watchdogs[name]
 	if !ok {
-		watchdog = newWatchdog(name, interval)
+		watchdog = newWatchdog(name, expires)
 		logger.Infof("New watchdog created: %v", name)
 	}
 
-	return watchdog
+	return watchdog, err
 }
 
-func (watchdog *Watchdog) Kick(interval time.Duration) (err error) {
+func (watchdog *Watchdog) Kick(expires time.Duration) (err error) {
 	watchdog.mu.Lock()
 	defer watchdog.mu.Unlock()
 
 	// reset the timer
-	watchdog.reset(interval)
+	watchdog.reset(expires)
+
+	return nil
+}
+
+func (watchdog *Watchdog) Wait(maxwait time.Duration) (err error) {
 
 	return nil
 }

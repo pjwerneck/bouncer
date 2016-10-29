@@ -4,7 +4,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func router() *httprouter.Router {
+func Router() *httprouter.Router {
 	r := httprouter.New()
 
 	r.GET("/v1/tokenbucket/:name/acquire", TokenBucketAcquireHandler)

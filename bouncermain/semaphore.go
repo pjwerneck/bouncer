@@ -37,7 +37,7 @@ func newSemaphore(name string, size uint64) (semaphore *Semaphore) {
 	return semaphore
 }
 
-func getSemaphore(name string, size uint64) (semaphore *Semaphore) {
+func getSemaphore(name string, size uint64) (semaphore *Semaphore, err error) {
 	semaphoresMutex.Lock()
 	defer semaphoresMutex.Unlock()
 
@@ -51,17 +51,17 @@ func getSemaphore(name string, size uint64) (semaphore *Semaphore) {
 	semaphore.Size = size
 	semaphore.mu.Unlock()
 
-	return semaphore
+	return semaphore, err
 }
 
-func (semaphore *Semaphore) getKey(key string) (expire time.Duration, ok bool) {
+func (semaphore *Semaphore) getKey(key string) (expires time.Duration, ok bool) {
 	semaphore.mu.Lock()
 	defer semaphore.mu.Unlock()
-	expire, ok = semaphore.Keys[key]
+	expires, ok = semaphore.Keys[key]
 	return
 }
 
-func (semaphore *Semaphore) setKey(key string, expire time.Duration) bool {
+func (semaphore *Semaphore) setKey(key string, expires time.Duration) bool {
 	semaphore.mu.Lock()
 	defer semaphore.mu.Unlock()
 
@@ -69,9 +69,9 @@ func (semaphore *Semaphore) setKey(key string, expire time.Duration) bool {
 		return false
 	}
 
-	semaphore.Keys[key] = expire
-	if expire > 0 {
-		semaphore.timers[key] = time.AfterFunc(expire,
+	semaphore.Keys[key] = expires
+	if expires > 0 {
+		semaphore.timers[key] = time.AfterFunc(expires,
 			func() {
 				semaphore.delKey(key)
 				atomic.AddUint64(&semaphore.Stats.Expired, 1)
@@ -95,7 +95,7 @@ func (semaphore *Semaphore) delKey(key string) {
 	}
 }
 
-func (semaphore *Semaphore) Acquire(timeout time.Duration, expire time.Duration, key string) (token string, err error) {
+func (semaphore *Semaphore) Acquire(timeout time.Duration, expires time.Duration, key string) (token string, err error) {
 	// generate a random uuid as key if not provided
 	if key == "" {
 		key = uuid.NewV4().String()
@@ -114,7 +114,7 @@ func (semaphore *Semaphore) Acquire(timeout time.Duration, expire time.Duration,
 	started := time.Now()
 	for {
 
-		if semaphore.setKey(key, expire) {
+		if semaphore.setKey(key, expires) {
 			token = key
 			atomic.AddUint64(&semaphore.Stats.Acquired, 1)
 			break

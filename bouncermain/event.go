@@ -9,7 +9,6 @@ import (
 type Event struct {
 	Name     string
 	acquireC chan bool
-	message  string
 	sendL    *sync.Mutex
 	closed   bool
 }
@@ -32,7 +31,7 @@ func newEvent(name string) (event *Event) {
 	return event
 }
 
-func getEvent(name string) (event *Event) {
+func getEvent(name string) (event *Event, err error) {
 	eventsMutex.Lock()
 	defer eventsMutex.Unlock()
 
@@ -42,28 +41,21 @@ func getEvent(name string) (event *Event) {
 		logger.Infof("New event created: name=%v", name)
 	}
 
-	return event
+	return event, err
 }
 
-func (event *Event) Wait(timeout time.Duration) (message string, err error) {
-	_, err = RecvTimeout(event.acquireC, timeout)
-	if err != nil {
-		//atomic.AddUint64(&event.Stats.TimedOut, 1)
-		return message, err
-	}
-
-	message = event.message
-	return message, nil
+func (event *Event) Wait(maxwait time.Duration) (err error) {
+	_, err = RecvTimeout(event.acquireC, maxwait)
+	return err
 }
 
-func (event *Event) Send(message string) (err error) {
+func (event *Event) Send() (err error) {
 	event.sendL.Lock()
 	defer event.sendL.Unlock()
 
 	if event.closed {
 		return ErrEventClosed
 	} else {
-		event.message = message
 		close(event.acquireC)
 		event.closed = true
 	}

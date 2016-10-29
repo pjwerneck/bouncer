@@ -6,160 +6,135 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
-func APIResponse(w http.ResponseWriter, r *http.Request, rep Reply) {
-	w.WriteHeader(rep.Status)
-	w.Write([]byte(rep.Body))
-}
-
 func TokenBucketAcquireHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	values := r.URL.Query()
+	var err error
+	var bucket *TokenBucket
 
 	req := newRequest()
 	rep := newReply()
 
-	err := decoder.Decode(&req, values)
+	err = req.Decode(r.URL.Query())
 	if err == nil {
-		bucket := getTokenBucket(ps[0].Value, req.Size, req.Interval)
+		bucket, err = getTokenBucket(ps[0].Value, req.Size, req.Interval)
+	}
+
+	if err == nil {
 		err = bucket.Acquire(req.MaxWait)
 	}
 
-	if err != nil {
-		rep.Body = err.Error()
-		switch err {
-		case ErrTimedOut:
-			rep.Status = http.StatusRequestTimeout
-		default:
-			rep.Status = http.StatusBadRequest
-		}
-	} else {
-		rep.Status = http.StatusNoContent
-	}
-
-	APIResponse(w, r, rep)
+	rep.WriteResponse(w, r, err)
 }
 
 func SemaphoreAcquireHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	values := r.URL.Query()
+	var err error
+	var semaphore *Semaphore
 
 	req := newRequest()
 	rep := newReply()
 
-	err := decoder.Decode(&req, values)
+	err = req.Decode(r.URL.Query())
 	if err == nil {
-		semaphore := getSemaphore(ps[0].Value, req.Size)
-		rep.Body, err = semaphore.Acquire(req.MaxWait, req.Expire, req.Key)
+		semaphore, err = getSemaphore(ps[0].Value, req.Size)
 	}
 
-	if err != nil {
-		rep.Body = err.Error()
-		switch err {
-		case ErrTimedOut:
-			rep.Status = http.StatusRequestTimeout
-		default:
-			rep.Status = http.StatusBadRequest
-		}
+	if err == nil {
+		rep.Body, err = semaphore.Acquire(req.MaxWait, req.Expires, req.Key)
 	}
 
-	APIResponse(w, r, rep)
+	rep.WriteResponse(w, r, err)
 }
 
 func SemaphoreReleaseHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	values := r.URL.Query()
+	var err error
+	var semaphore *Semaphore
 
 	req := newRequest()
 	rep := newReply()
 
-	err := decoder.Decode(&req, values)
+	err = req.Decode(r.URL.Query())
 	if err == nil {
-		semaphore := getSemaphore(ps[0].Value, req.Size)
+		semaphore, err = getSemaphore(ps[0].Value, req.Size)
+	}
+
+	if err == nil {
 		rep.Body, err = semaphore.Release(req.Key)
 	}
 
-	if err != nil {
-		rep.Body = err.Error()
-		switch err {
-		case ErrTimedOut:
-			rep.Status = http.StatusRequestTimeout
-		default:
-			rep.Status = http.StatusBadRequest
-		}
-	} else {
-		rep.Status = http.StatusNoContent
-	}
-
-	APIResponse(w, r, rep)
+	rep.WriteResponse(w, r, err)
 }
 
 func EventWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	values := r.URL.Query()
+	var err error
+	var event *Event
 
 	req := newRequest()
 	rep := newReply()
 
-	err := decoder.Decode(&req, values)
+	err = req.Decode(r.URL.Query())
 	if err == nil {
-		event := getEvent(ps[0].Value)
-		rep.Body, err = event.Wait(req.MaxWait)
+		event, err = getEvent(ps[0].Value)
 	}
 
-	if err != nil {
-		rep.Body = err.Error()
-		switch err {
-		case ErrTimedOut:
-			rep.Status = http.StatusRequestTimeout
-		default:
-			rep.Status = http.StatusBadRequest
-		}
+	if err == nil {
+		err = event.Wait(req.MaxWait)
 	}
 
-	APIResponse(w, r, rep)
+	rep.WriteResponse(w, r, err)
 }
 
 func EventSendHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	values := r.URL.Query()
+	var err error
+	var event *Event
 
 	req := newRequest()
 	rep := newReply()
 
-	err := decoder.Decode(&req, values)
+	err = req.Decode(r.URL.Query())
 	if err == nil {
-		event := getEvent(ps[0].Value)
-		err = event.Send(req.Message)
+		event, err = getEvent(ps[0].Value)
 	}
 
-	if err != nil {
-		rep.Body = err.Error()
-		switch err {
-		case ErrEventClosed:
-			rep.Status = http.StatusConflict
-		default:
-			rep.Status = http.StatusBadRequest
-		}
-	} else {
-		rep.Status = http.StatusNoContent
+	if err == nil {
+		err = event.Send()
 	}
 
-	APIResponse(w, r, rep)
+	rep.WriteResponse(w, r, err)
+}
+
+func WatchdogWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	var err error
+	var watchdog *Watchdog
+
+	req := newRequest()
+	rep := newReply()
+
+	err = req.Decode(r.URL.Query())
+	if err == nil {
+		watchdog, err = getWatchdog(ps[0].Value, req.Expires)
+	}
+
+	if err == nil {
+		err = watchdog.Wait(req.MaxWait)
+	}
+
+	rep.WriteResponse(w, r, err)
 }
 
 func WatchdogKickHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	values := r.URL.Query()
+	var err error
+	var watchdog *Watchdog
 
 	req := newRequest()
 	rep := newReply()
 
-	err := decoder.Decode(&req, values)
+	err = req.Decode(r.URL.Query())
 	if err == nil {
-		watchdog := getWatchdog(ps[0].Value, req.Interval)
-		err = watchdog.Kick(req.Interval)
+		watchdog, err = getWatchdog(ps[0].Value, req.Expires)
 	}
 
-	if err != nil {
-		rep.Body = err.Error()
-		rep.Status = http.StatusBadRequest
-	} else {
-		rep.Status = http.StatusNoContent
+	if err == nil {
+		err = watchdog.Kick(req.Expires)
 	}
 
-	APIResponse(w, r, rep)
+	rep.WriteResponse(w, r, err)
 }
