@@ -103,12 +103,13 @@ func SemaphoreRelease(req *Request, rep *Reply) error {
 
 	semaphore := getSemaphore(req.Name, req.Size)
 
-	token, err := semaphore.Release(req.Key)
+	_, err := semaphore.Release(req.Key)
 	if err != nil {
 		return err
 	}
 
-	rep.Body = token
+	rep.Body = ""
+	rep.Status = 204
 	return nil
 }
 
