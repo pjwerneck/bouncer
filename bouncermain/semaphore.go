@@ -120,7 +120,7 @@ func (semaphore *Semaphore) Acquire(timeout time.Duration, expires time.Duration
 			break
 		}
 
-		if time.Since(started) >= timeout {
+		if timeout > 0 && time.Since(started) >= timeout {
 			atomic.AddUint64(&semaphore.Stats.TimedOut, 1)
 			return "", ErrTimedOut
 		}
