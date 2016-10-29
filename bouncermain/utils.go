@@ -43,9 +43,11 @@ func RecvTimeout(ch <-chan bool, d time.Duration) (v bool, err error) {
 
 	case d > 0:
 		// timeout positive, wait until timeout
+		timer := time.NewTimer(d)
+		defer timer.Stop()
 		select {
 		case v = <-ch:
-		case <-time.After(d):
+		case <-timer.C:
 			err = ErrTimedOut
 		}
 	}

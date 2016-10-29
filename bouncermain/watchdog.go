@@ -18,10 +18,10 @@ type Watchdog struct {
 var watchdogs = map[string]*Watchdog{}
 var watchdogsMutex = &sync.Mutex{}
 
-func newWatchdog(name string, interval uint64) (watchdog *Watchdog) {
+func newWatchdog(name string, interval time.Duration) (watchdog *Watchdog) {
 	watchdog = &Watchdog{
 		Name:  name,
-		timer: time.NewTimer(time.Millisecond * time.Duration(interval)),
+		timer: time.NewTimer(interval),
 		mu:    &sync.Mutex{},
 	}
 
