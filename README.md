@@ -25,24 +25,24 @@ Use `size=20`:
 
 #### *"But I can't have all twenty starting at the same time!"*
 
-If you don't want bursts of activity, set interval to `1/rate`:
+If you don't want bursts of activity, set interval to `1000/rate`:
 
     $ curl http://myhost:5505/v1/tokenbucket/myapp/acquire?interval=50
 
-#### *"What if I have a resource that can be used by only one client at a time?"*
+#### *"What if I have a resource that can be used only by one client at a time?"*
 
 Use a semaphore:
 
-    $ $KEY = curl http://myhost:5505/v1/semaphore/myapp/acquire
-    $ # do your stuff
+    $ KEY=$(curl http://myhost:5505/v1/semaphore/myapp/acquire)
+    $ # do something
     $ curl http://myhost:5505/v1/semaphore/myapp/release?key=$KEY
 
 #### *"Now I need to limit it to ten concurrent clients."*
 
 Use a semaphore with `size=10`:
 
-    $ $KEY = curl http://myhost:5505/v1/semaphore/myapp/acquire?size=10
-    $ # do your stuff
+    $ KEY=$(curl http://myhost:5505/v1/semaphore/myapp/acquire?size=10)
+    $ # do something
     $ curl http://myhost:5505/v1/semaphore/myapp/release?key=$KEY
 
 #### *"I have some clients that must wait for something else to finish."*
@@ -98,7 +98,7 @@ Status codes are very specific so clients can use them to understand the respons
 
 **`200 OK`**
 
-For succesful requests that need to return some value, e.g. `semaphore/acquire`, `event/wait`.
+For succesful requests that return some value.
 
 **`204 No Content`**
 
@@ -189,7 +189,7 @@ Sends the signal to all waiting requests.
 
 ## Watchdog
 
-A `watchdog` can be used to synchronize clients to do something when a recurring request stops or takes too long.
+A `watchdog` can be used to synchronize clients to do something when a recurring request takes too long.
 
 ### Wait
 ***`/v1/watchdog/<name>/wait <maxwait=-1>`***
