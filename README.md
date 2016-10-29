@@ -1,9 +1,14 @@
 
 # bouncer
 
+[![Go Report Card](https://goreportcard.com/badge/github.com/pjwerneck/bouncer)](https://goreportcard.com/report/github.com/pjwerneck/bouncer)
+[![Build Status](https://travis-ci.org/pjwerneck/bouncer.svg?branch=master)](https://travis-ci.org/pjwerneck/bouncer)
+
+
+
 **WARNING: This is alpha code and may not be suitable for production usage.**
 
-This is a simple RPC service to provide throttling, rate-limiting, and synchronization for distributed applications. It's intended as a replacement for makeshift solutions using memcached or Redis. 
+This is a simple RPC service to provide throttling, rate-limiting, and synchronization for distributed applications. It's intended as a replacement for makeshift solutions using memcached or Redis.
 
 ## Examples
 
@@ -12,13 +17,13 @@ This is a simple RPC service to provide throttling, rate-limiting, and synchroni
 You need a token bucket. Just do this before each operation:
 
     $ curl http://myhost:5505/v1/tokenbucket/myapp/acquire?size=20
-    
+
 #### *"But I can't have all 20 starting at the same time!"*
 
 If you don't want bursts of activity, reduce the `size` and adjust the `interval`:
 
     $ curl http://myhost:5505/v1/tokenbucket/myapp/acquire?size=1&interval=50
-  
+
 #### *"What if I have a resource that can be used by only one client at a time?"*
 
 Use a semaphore:
@@ -43,7 +48,7 @@ You can use an event:
     $ curl http://myhost:5505/v1/event/myapp/wait
     $ # and this on the client doing the operation, when it's finished
     $ curl http://myhost:5505/v1/event/myapp/send?message=wakeup
-     
+
 
 ## API
 
@@ -114,7 +119,7 @@ The `tokenbucket` is an implementation of the Token Bucket algorithm. The bucket
 ### Acquire
 ***`/v1/tokenbucket/<name>/acquire <size> <interval=1000> <maxwait=-1>`***
 
-In most cases you can just set `size` to the desired number of requests per second. 
+In most cases you can just set `size` to the desired number of requests per second.
 
 The `size` value must be a positive integer. If you need a fractional ratio of requests per second, you should reduce the fraction and set `size` and `interval` accordingly. Keep in mind that all tokens are added at once, and a naive conversion might result in long wait times. For instance, if you want 10 requests per minute use `size=1&interval=6000`, not `size=10&interval=60000`.
 
@@ -132,8 +137,8 @@ A `semaphore` can be used to control concurrent access to shared resources.
 ### Acquire
 ***`/v1/semaphore/<name>/acquire <size> <key=?> <expires=60000> <maxwait=-1>`***
 
-A semaphore has a number of slots equal to `size`. The `semaphore.acquire` method stores the `key` value in the next available slot. If there are no available slots, the request waits until `maxwait`. 
- 
+A semaphore has a number of slots equal to `size`. The `semaphore.acquire` method stores the `key` value in the next available slot. If there are no available slots, the request waits until `maxwait`.
+
 If `key` is not provided, a random UUID is generated.
 
 If `expires` is provided, the hold is automatically released after the given time. You should provide a reasonable value if there's the possibility of a client crashing and never releasing it.
@@ -155,7 +160,7 @@ Releases the previously acquired hold. A release always returns immediately.
 
 ## Event
 
-An `event` can be used to synchronize clients, when you want all of them to start doing something immediately after a signal. 
+An `event` can be used to synchronize clients, when you want all of them to start doing something immediately after a signal.
 
 ### Wait
 ***`/v1/event/<name>/wait <maxwait=-1>`***
@@ -206,8 +211,6 @@ Resets the watchdog timer. A signal will be sent to the clients if another `kick
 
 TODO
 
-## FAQ 
+## FAQ
 
 TODO
-
-
