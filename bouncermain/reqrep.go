@@ -25,6 +25,7 @@ func newRequest() Request {
 		Expires:  time.Duration(60) * time.Second,
 		Interval: time.Duration(1) * time.Second,
 		MaxWait:  time.Duration(-1),
+		Size:     1,
 		Arrival:  time.Now(),
 	}
 }
