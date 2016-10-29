@@ -6,6 +6,11 @@ import (
 	"github.com/julienschmidt/httprouter"
 )
 
+func APIResponse(w http.ResponseWriter, r *http.Request, rep Reply) {
+	w.WriteHeader(rep.Status)
+	w.Write([]byte(rep.Body))
+}
+
 func TokenBucketAcquireHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	values := r.URL.Query()
 
@@ -26,6 +31,8 @@ func TokenBucketAcquireHandler(w http.ResponseWriter, r *http.Request, ps httpro
 		default:
 			rep.Status = http.StatusBadRequest
 		}
+	} else {
+		rep.Status = http.StatusNoContent
 	}
 
 	APIResponse(w, r, rep)
