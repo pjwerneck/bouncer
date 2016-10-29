@@ -43,7 +43,7 @@ func getTokenBucket(name string, size uint64, interval time.Duration) (bucket *T
 	bucket, ok := buckets[name]
 	if !ok {
 		bucket = newTokenBucket(name, size, interval)
-		logger.Infof("New token bucket: name=%v, size=%v", name, size)
+		logger.Infof("tokenbucket created: name=%v, size=%v", name, size)
 	}
 
 	bucket.Size = size

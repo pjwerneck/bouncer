@@ -11,7 +11,7 @@ import (
 type Semaphore struct {
 	Name     string
 	Size     uint64
-	Keys     map[string]uint64
+	Keys     map[string]time.Duration
 	acquireC chan bool
 	timers   map[string]*time.Timer
 	mu       *sync.Mutex
@@ -19,21 +19,13 @@ type Semaphore struct {
 }
 
 var semaphores = map[string]*Semaphore{}
-var semaphoresMutex = &sync.RWMutex{}
+var semaphoresMutex = &sync.Mutex{}
 
 func newSemaphore(name string, size uint64) (semaphore *Semaphore) {
-	semaphoresMutex.Lock()
-	defer semaphoresMutex.Unlock()
-
-	semaphore, ok := semaphores[name]
-	if ok {
-		return semaphore
-	}
-
 	semaphore = &Semaphore{
 		Name:     name,
 		Size:     uint64(size),
-		Keys:     make(map[string]uint64),
+		Keys:     make(map[string]time.Duration),
 		acquireC: make(chan bool, size),
 		timers:   make(map[string]*time.Timer),
 		mu:       &sync.Mutex{},
@@ -46,52 +38,40 @@ func newSemaphore(name string, size uint64) (semaphore *Semaphore) {
 }
 
 func getSemaphore(name string, size uint64) (semaphore *Semaphore) {
-	semaphoresMutex.RLock()
-	semaphore, ok := semaphores[name]
-	semaphoresMutex.RUnlock()
+	semaphoresMutex.Lock()
+	defer semaphoresMutex.Unlock()
 
+	semaphore, ok := semaphores[name]
 	if !ok {
 		semaphore = newSemaphore(name, size)
+		logger.Infof("semaphore created: name=%v, size=%v", name, size)
 	}
 
-	semaphore.setSize(size)
+	semaphore.mu.Lock()
+	semaphore.Size = size
+	semaphore.mu.Unlock()
 
 	return semaphore
 }
 
-func (semaphore *Semaphore) setSize(size uint64) uint64 {
-	old := atomic.SwapUint64(&semaphore.Size, size)
-
-	if old != size {
-		logger.Noticef("%s - semaphore resized from %d to %d", semaphore.Name, old, size)
-	}
-
-	return old
-}
-
-func (semaphore *Semaphore) getSize() uint64 {
-	return atomic.LoadUint64(&semaphore.Size)
-}
-
-func (semaphore *Semaphore) getKey(key string) (exp uint64, ok bool) {
+func (semaphore *Semaphore) getKey(key string) (expire time.Duration, ok bool) {
 	semaphore.mu.Lock()
 	defer semaphore.mu.Unlock()
-	exp, ok = semaphore.Keys[key]
+	expire, ok = semaphore.Keys[key]
 	return
 }
 
-func (semaphore *Semaphore) setKey(key string, exp uint64) bool {
+func (semaphore *Semaphore) setKey(key string, expire time.Duration) bool {
 	semaphore.mu.Lock()
 	defer semaphore.mu.Unlock()
 
-	if int(semaphore.getSize())-len(semaphore.Keys) <= 0 {
+	if int(semaphore.Size)-len(semaphore.Keys) <= 0 {
 		return false
 	}
 
-	semaphore.Keys[key] = exp
-	if exp > 0 {
-		d := time.Duration(exp) * time.Second
-		semaphore.timers[key] = time.AfterFunc(d,
+	semaphore.Keys[key] = expire
+	if expire > 0 {
+		semaphore.timers[key] = time.AfterFunc(expire,
 			func() {
 				semaphore.delKey(key)
 				atomic.AddUint64(&semaphore.Stats.Expired, 1)
@@ -115,7 +95,7 @@ func (semaphore *Semaphore) delKey(key string) {
 	}
 }
 
-func (semaphore *Semaphore) Acquire(timeout time.Duration, expire uint64, key string) (token string, err error) {
+func (semaphore *Semaphore) Acquire(timeout time.Duration, expire time.Duration, key string) (token string, err error) {
 	// generate a random uuid as key if not provided
 	if key == "" {
 		key = uuid.NewV4().String()
@@ -154,7 +134,7 @@ func (semaphore *Semaphore) Acquire(timeout time.Duration, expire uint64, key st
 func (semaphore *Semaphore) Release(key string) (string, error) {
 	semaphore.delKey(key)
 	atomic.AddUint64(&semaphore.Stats.Released, 1)
-	return key, nil
+	return "", nil
 }
 
 func (semaphore *Semaphore) GetStats() *Metrics {

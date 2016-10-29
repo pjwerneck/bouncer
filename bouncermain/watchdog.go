@@ -26,7 +26,6 @@ func newWatchdog(name string, interval time.Duration) (watchdog *Watchdog) {
 	watchdogs[name] = watchdog
 
 	go watchdog.watch()
-	//go watchdog.Stats.Run()
 
 	return watchdog
 }
