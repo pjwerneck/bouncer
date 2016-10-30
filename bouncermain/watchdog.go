@@ -9,6 +9,7 @@ type Watchdog struct {
 	Name   string
 	timer  *time.Timer
 	mu     *sync.Mutex
+	waitC  chan bool
 	resetC chan bool
 }
 
@@ -21,6 +22,7 @@ func newWatchdog(name string, expires time.Duration) (watchdog *Watchdog) {
 		timer:  time.NewTimer(expires),
 		mu:     &sync.Mutex{},
 		resetC: make(chan bool),
+		waitC:  make(chan bool),
 	}
 
 	watchdogs[name] = watchdog
@@ -33,8 +35,13 @@ func newWatchdog(name string, expires time.Duration) (watchdog *Watchdog) {
 func (watchdog *Watchdog) watch() {
 	select {
 	case <-watchdog.timer.C:
-		logger.Info("watchdog triggered")
+		// broadcast by closing waitC, and replacing it immediately
+		watchdog.mu.Lock()
+		close(watchdog.waitC)
+		watchdog.waitC = make(chan bool)
+		watchdog.mu.Unlock()
 	case <-watchdog.resetC:
+		// do nothing
 	}
 }
 
@@ -71,6 +78,10 @@ func (watchdog *Watchdog) Kick(expires time.Duration) (err error) {
 }
 
 func (watchdog *Watchdog) Wait(maxwait time.Duration) (err error) {
+	_, err = RecvTimeout(watchdog.waitC, maxwait)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

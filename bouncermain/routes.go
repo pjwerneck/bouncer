@@ -13,6 +13,7 @@ func Router() *httprouter.Router {
 	r.GET("/v1/event/:name/wait", EventWaitHandler)
 	r.GET("/v1/event/:name/send", EventSendHandler)
 	r.GET("/v1/watchdog/:name/kick", WatchdogKickHandler)
+	r.GET("/v1/watchdog/:name/wait", WatchdogWaitHandler)
 
 	return r
 }
