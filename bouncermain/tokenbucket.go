@@ -75,9 +75,9 @@ func (bucket *TokenBucket) refill() {
 	}
 }
 
-func (bucket *TokenBucket) Acquire(timeout time.Duration) (err error) {
+func (bucket *TokenBucket) Acquire(maxwait time.Duration) (err error) {
 
-	_, err = RecvTimeout(bucket.acquireC, timeout)
+	_, err = RecvTimeout(bucket.acquireC, maxwait)
 	if err != nil {
 		atomic.AddUint64(&bucket.Stats.TimedOut, 1)
 		return err

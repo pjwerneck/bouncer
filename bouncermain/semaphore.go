@@ -99,7 +99,7 @@ func (semaphore *Semaphore) delKey(key string) {
 	}
 }
 
-func (semaphore *Semaphore) Acquire(timeout time.Duration, expires time.Duration, key string) (token string, err error) {
+func (semaphore *Semaphore) Acquire(maxwait time.Duration, expires time.Duration, key string) (token string, err error) {
 	// generate a random uuid as key if not provided
 	if key == "" {
 		key = uuid.NewV4().String()
@@ -124,7 +124,7 @@ func (semaphore *Semaphore) Acquire(timeout time.Duration, expires time.Duration
 			break
 		}
 
-		if timeout > 0 && time.Since(started) >= timeout {
+		if maxwait > 0 && time.Since(started) >= maxwait {
 			atomic.AddUint64(&semaphore.Stats.TimedOut, 1)
 			return "", ErrTimedOut
 		}
