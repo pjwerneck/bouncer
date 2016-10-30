@@ -20,6 +20,7 @@ func TokenBucketAcquireHandler(w http.ResponseWriter, r *http.Request, ps httpro
 
 	if err == nil {
 		err = bucket.Acquire(req.MaxWait)
+		rep.Status = http.StatusNoContent
 	}
 
 	rep.WriteResponse(w, r, err)
@@ -39,6 +40,7 @@ func SemaphoreAcquireHandler(w http.ResponseWriter, r *http.Request, ps httprout
 
 	if err == nil {
 		rep.Body, err = semaphore.Acquire(req.MaxWait, req.Expires, req.Key)
+		rep.Status = http.StatusOK
 	}
 
 	rep.WriteResponse(w, r, err)
@@ -57,7 +59,8 @@ func SemaphoreReleaseHandler(w http.ResponseWriter, r *http.Request, ps httprout
 	}
 
 	if err == nil {
-		rep.Body, err = semaphore.Release(req.Key)
+		err = semaphore.Release(req.Key)
+		rep.Status = http.StatusNoContent
 	}
 
 	rep.WriteResponse(w, r, err)
@@ -77,6 +80,7 @@ func EventWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 
 	if err == nil {
 		err = event.Wait(req.MaxWait)
+		rep.Status = http.StatusNoContent
 	}
 
 	rep.WriteResponse(w, r, err)
@@ -96,6 +100,7 @@ func EventSendHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 
 	if err == nil {
 		err = event.Send()
+		rep.Status = http.StatusNoContent
 	}
 
 	rep.WriteResponse(w, r, err)
@@ -115,6 +120,7 @@ func WatchdogWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 
 	if err == nil {
 		err = watchdog.Wait(req.MaxWait)
+		rep.Status = http.StatusNoContent
 	}
 
 	rep.WriteResponse(w, r, err)
@@ -134,6 +140,7 @@ func WatchdogKickHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 
 	if err == nil {
 		err = watchdog.Kick(req.Expires)
+		rep.Status = http.StatusNoContent
 	}
 
 	rep.WriteResponse(w, r, err)

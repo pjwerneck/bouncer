@@ -50,10 +50,6 @@ func (rep *Reply) WriteResponse(w http.ResponseWriter, r *http.Request, err erro
 		default:
 			rep.Status = http.StatusBadRequest
 		}
-	} else {
-		if rep.Status == http.StatusOK && rep.Body == "" {
-			rep.Status = http.StatusNoContent
-		}
 	}
 
 	w.WriteHeader(rep.Status)

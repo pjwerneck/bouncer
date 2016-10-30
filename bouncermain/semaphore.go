@@ -135,10 +135,10 @@ func (semaphore *Semaphore) Acquire(timeout time.Duration, expires time.Duration
 	return token, nil
 }
 
-func (semaphore *Semaphore) Release(key string) (string, error) {
+func (semaphore *Semaphore) Release(key string) error {
 	semaphore.delKey(key)
 	atomic.AddUint64(&semaphore.Stats.Released, 1)
-	return "", nil
+	return nil
 }
 
 func (semaphore *Semaphore) GetStats() *Metrics {
