@@ -1,4 +1,3 @@
-
 # bouncer
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/pjwerneck/bouncer)](https://goreportcard.com/report/github.com/pjwerneck/bouncer)
@@ -29,7 +28,7 @@ If you don't want bursts of activity, set interval to `1000/rate`:
 
     $ curl http://myhost:5505/v1/tokenbucket/myapp/acquire?interval=50
 
-#### *"What if I have a resource that can be used only by one client at a time?"*
+#### *"What if I have a resource that can be used by only one client at a time?"*
 
 Use a semaphore:
 
@@ -85,14 +84,18 @@ The unique value used by `semaphore` to release a hold.
 
 The max time to wait for a response. The default is `-1`, wait forever. A value of zero never blocks, returning immediately.
 
+You should use `maxwait=0` if you want to return an error immediately instead of waiting for availability.
+
 **`size=[integer]`**
 
-The size of `tokenbucket` and `semaphore`. The default is `1`. It must be greater than zero.
+The size of `tokenbucket` and `semaphore`. The default is `1`.
 
-> Keep in mind that changing the size of a controller affects its current state. For instance, if you reduce or increase the size of a tokenbucket, it will take into account the tokens already acquired in the current interval. If you reduce the size a semaphore, a client won't be able to acquire a hold until the extra clients were released.
+You can use `size=0` if you want to stop all activity, but keep in mind that a request with `size=0` will always timeout, unless another request with `size>0` resizes the controller.
+
+Resizing a controller affects its current state. For instance, if you reduce or increase the size of a `tokenbucket`, it will take into account the tokens already acquired in the current interval. If you reduce the size of a semaphore, a client won't be able to acquire a hold until the extra clients are released.
 
 
-### Success Responses
+### Responses
 
 Status codes are very specific so clients can use them to understand the response for valid requests without parsing the response body.
 
@@ -120,15 +123,15 @@ The current state of the controller is incompatible with this request.
 ## Token Bucket
 
 The `tokenbucket` is an implementation of the Token Bucket algorithm. The bucket has a limited size, and every `interval` the bucket is refilled to capacity with tokens. Each `tokenbucket.get` request takes a token out of the bucket, or waits for a token to be added if the bucket is empty.
-
+posi
 ### Acquire
 ***`/v1/tokenbucket/<name>/acquire <size=1> <interval=1000> <maxwait=-1>`***
 
 In most cases you can just set `size` to the desired number of requests per second.
 
-The `size` value must be a positive integer. If you need a fractional ratio of requests per second, you should reduce the fraction and set `size` and `interval` accordingly. Keep in mind that all tokens are added at once, and a naive conversion might result in long wait times. For instance, if you want 10 requests per minute use `size=1&interval=6000`, not `size=10&interval=60000`.
+The `size` value must be an integer. If you need a fractional ratio of requests per second, you should reduce the fraction and set `size` and `interval` accordingly. Keep in mind that all tokens are added at once, and a naive conversion might result in long wait times. For instance, if you want 10 requests per minute use `size=1&interval=6000`, not `size=10&interval=60000`.
 
-Bursts of activity can happen if there are many clients waiting refill. If that's undesirable, you can reduce `size` and `interval` by a common factor. You can go as far as setting `size=1` and use the `interval` to control the average rate, but in mind that high rates can result in significantly higher CPU usage.
+Bursts of activity can happen if there are many clients waiting for a refill. If that's undesirable, you can reduce `size` and `interval` by a common factor. You can go as far as setting `size=1` and use the `interval` to control the average rate, but keep in mind that setting high rates this way can result in significantly higher loads.
 
 **Responses:**
 
@@ -142,11 +145,13 @@ A `semaphore` can be used to control concurrent access to shared resources.
 ### Acquire
 ***`/v1/semaphore/<name>/acquire <size=1> <key=?> <expires=60000> <maxwait=-1>`***
 
-A semaphore has a number of slots equal to `size`. The `semaphore.acquire` method stores the `key` value in the next available slot. If there are no available slots, the request waits until `maxwait`.
+A semaphore has a number of slots equal to `size`. An `acquire` request stores the `key` value in the next available slot. If there are no available slots, the request waits until `maxwait`.
 
 If `key` is not provided, a random UUID is generated.
 
-If `expires` is provided, the hold is automatically released after the given time. You should provide a reasonable value if there's the possibility of a client crashing and never releasing it.
+If `expires` is provided, the hold is automatically released after the given time. You should provide a reasonable value if there's the possibility of a client never releasing it. With a value of zero the hold never expires and must be released explicitly.
+
+Reusing a key that's already being held doesn't result in an error and will return a succesful response, but it doesn't reset the expiration timer.
 
 **Responses:**
 
@@ -210,9 +215,11 @@ Resets the watchdog timer. A signal will be sent to the clients if another `kick
 
 - `204 No Content` always.
 
-
-
 ## High Availability
+
+TODO
+
+## Performance Tips
 
 TODO
 
