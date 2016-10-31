@@ -124,6 +124,11 @@ func (semaphore *Semaphore) Acquire(maxwait time.Duration, expires time.Duration
 			break
 		}
 
+		if maxwait == 0 {
+			atomic.AddUint64(&semaphore.Stats.TimedOut, 1)
+			return "", ErrTimedOut
+		}
+
 		if maxwait > 0 && time.Since(started) >= maxwait {
 			atomic.AddUint64(&semaphore.Stats.TimedOut, 1)
 			return "", ErrTimedOut

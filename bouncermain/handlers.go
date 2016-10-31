@@ -15,6 +15,7 @@ func TokenBucketAcquireHandler(w http.ResponseWriter, r *http.Request, ps httpro
 
 	err = req.Decode(r.URL.Query())
 	if err == nil {
+		logger.Debugf("tokenbucket.acquire: %+v", req)
 		bucket, err = getTokenBucket(ps[0].Value, req.Size, req.Interval)
 	}
 
@@ -35,6 +36,7 @@ func SemaphoreAcquireHandler(w http.ResponseWriter, r *http.Request, ps httprout
 
 	err = req.Decode(r.URL.Query())
 	if err == nil {
+		logger.Debugf("semaphore.acquire: %+v", req)
 		semaphore, err = getSemaphore(ps[0].Value, req.Size)
 	}
 
@@ -55,6 +57,7 @@ func SemaphoreReleaseHandler(w http.ResponseWriter, r *http.Request, ps httprout
 
 	err = req.Decode(r.URL.Query())
 	if err == nil {
+		logger.Debugf("semaphore.release: %+v", req)
 		semaphore, err = getSemaphore(ps[0].Value, req.Size)
 	}
 
