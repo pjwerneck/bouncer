@@ -37,11 +37,6 @@ func newTokenBucket(name string, size uint64, interval time.Duration) (bucket *T
 }
 
 func getTokenBucket(name string, size uint64, interval time.Duration) (bucket *TokenBucket, err error) {
-	if size <= 0 {
-		err = ErrInvalidSize
-		return
-	}
-
 	bucketsMutex.Lock()
 	defer bucketsMutex.Unlock()
 

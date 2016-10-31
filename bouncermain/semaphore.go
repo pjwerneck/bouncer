@@ -38,10 +38,6 @@ func newSemaphore(name string, size uint64) (semaphore *Semaphore) {
 }
 
 func getSemaphore(name string, size uint64) (semaphore *Semaphore, err error) {
-	if size <= 0 {
-		err = ErrInvalidSize
-		return
-	}
 	semaphoresMutex.Lock()
 	defer semaphoresMutex.Unlock()
 
