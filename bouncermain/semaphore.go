@@ -85,18 +85,21 @@ func (semaphore *Semaphore) setKey(key string, expires time.Duration) bool {
 	return true
 }
 
-func (semaphore *Semaphore) delKey(key string) {
+func (semaphore *Semaphore) delKey(key string) error {
 	semaphore.mu.Lock()
 	defer semaphore.mu.Unlock()
-
-	if _, ok := semaphore.Keys[key]; ok {
-		delete(semaphore.Keys, key)
-	}
 
 	if t, ok := semaphore.timers[key]; ok {
 		t.Stop()
 		delete(semaphore.timers, key)
 	}
+
+	if _, ok := semaphore.Keys[key]; ok {
+		delete(semaphore.Keys, key)
+	} else {
+		return ErrKeyError
+	}
+	return nil
 }
 
 func (semaphore *Semaphore) Acquire(maxwait time.Duration, expires time.Duration, key string) (token string, err error) {
@@ -141,9 +144,9 @@ func (semaphore *Semaphore) Acquire(maxwait time.Duration, expires time.Duration
 }
 
 func (semaphore *Semaphore) Release(key string) error {
-	semaphore.delKey(key)
+	err := semaphore.delKey(key)
 	atomic.AddUint64(&semaphore.Stats.Released, 1)
-	return nil
+	return err
 }
 
 func (semaphore *Semaphore) GetStats() *Metrics {

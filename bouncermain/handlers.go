@@ -64,6 +64,8 @@ func SemaphoreReleaseHandler(w http.ResponseWriter, r *http.Request, ps httprout
 	if err == nil {
 		err = semaphore.Release(req.Key)
 		rep.Status = http.StatusNoContent
+
+		logger.Debugf("semaphore.keys: %+v", semaphore.Keys)
 	}
 
 	rep.WriteResponse(w, r, err)

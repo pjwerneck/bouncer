@@ -47,6 +47,8 @@ func (rep *Reply) WriteResponse(w http.ResponseWriter, r *http.Request, err erro
 		switch err {
 		case ErrTimedOut:
 			rep.Status = http.StatusRequestTimeout
+		case ErrKeyError:
+			rep.Status = http.StatusConflict
 		default:
 			rep.Status = http.StatusBadRequest
 		}
