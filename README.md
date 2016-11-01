@@ -122,21 +122,21 @@ The current state of the controller is incompatible with this request.
 
 ## Token Bucket
 
-The `tokenbucket` is an implementation of the Token Bucket algorithm. The bucket has a limited size, and every `interval` the bucket is refilled to capacity with tokens. Each `tokenbucket.get` request takes a token out of the bucket, or waits for a token to be added if the bucket is empty.
-posi
+The `tokenbucket` is an implementation of the Token Bucket algorithm. The bucket has a limited size, and every `interval` the bucket is refilled to capacity with tokens. Each `acquire` request takes a token out of the bucket, or waits for a token to be added if the bucket is empty.
+
 ### Acquire
 ***`/v1/tokenbucket/<name>/acquire <size=1> <interval=1000> <maxwait=-1>`***
 
-In most cases you can just set `size` to the desired number of requests per second.
+In most cases you can simply set `size` to the desired number of requests per second.
 
 The `size` value must be an integer. If you need a fractional ratio of requests per second, you should reduce the fraction and set `size` and `interval` accordingly. Keep in mind that all tokens are added at once, and a naive conversion might result in long wait times. For instance, if you want 10 requests per minute use `size=1&interval=6000`, not `size=10&interval=60000`.
 
-Bursts of activity can happen if there are many clients waiting for a refill. If that's undesirable, you can reduce `size` and `interval` by a common factor. You can go as far as setting `size=1` and use the `interval` to control the average rate, but keep in mind that setting high rates this way can result in significantly higher loads.
+Bursts of activity can happen if there are many clients waiting for a refill. If that's undesirable, you can reduce `size` and `interval` by a common factor. You can go as far as setting `size=1` and use only the `interval` to control the average rate, but keep in mind that setting high rates this way can result in significantly higher server CPU load.
 
 **Responses:**
 
-- `204 No Content`
-- `408 Request Timeout`
+- `204 No Content`, if successful.
+- `408 Request Timeout`, if maxwait was exceeded.
 
 ## Semaphore
 
