@@ -45,7 +45,7 @@ func GetRequest(url string) (status int, body string, err error) {
 }
 
 func TestGetTokensUntilEmpty(t *testing.T) {
-	url := fmt.Sprintf("%s/v1/tokenbucket/test1/acquire?size=100&maxwait=1", server.URL)
+	url := fmt.Sprintf("%s/tokenbucket/test1/acquire?size=100&maxwait=1", server.URL)
 	n := 0
 	for {
 		status, _, err := GetRequest(url)
@@ -59,7 +59,7 @@ func TestGetTokensUntilEmpty(t *testing.T) {
 }
 
 func TestGetTokensUntilEmptyAndWaitForRefill(t *testing.T) {
-	url := fmt.Sprintf("%s/v1/tokenbucket/test2/acquire?size=10&maxwait=1&interval=10", server.URL)
+	url := fmt.Sprintf("%s/tokenbucket/test2/acquire?size=10&maxwait=1&interval=10", server.URL)
 
 	n := 0
 	for {
@@ -86,7 +86,7 @@ func TestGetTokensUntilEmptyAndWaitForRefill(t *testing.T) {
 }
 
 func TestSemaphoreAcquireAndRelease(t *testing.T) {
-	url := fmt.Sprintf("%s/v1/semaphore/test1/acquire?maxwait=1", server.URL)
+	url := fmt.Sprintf("%s/semaphore/test1/acquire?maxwait=1", server.URL)
 
 	status, key, err := GetRequest(url)
 	require.Nil(t, err)
@@ -96,7 +96,7 @@ func TestSemaphoreAcquireAndRelease(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, 408, status)
 
-	url = fmt.Sprintf("%s/v1/semaphore/test1/release?maxwait=1&key=%s", server.URL, key)
+	url = fmt.Sprintf("%s/semaphore/test1/release?maxwait=1&key=%s", server.URL, key)
 	status, key, err = GetRequest(url)
 	require.Nil(t, err)
 	require.Equal(t, 204, status)
@@ -107,12 +107,12 @@ func TestEventWaitAndSend(t *testing.T) {
 	time.AfterFunc(time.Duration(1e7),
 		func() {
 
-			status, _, err := GetRequest(fmt.Sprintf("%s/v1/event/test1/send", server.URL))
+			status, _, err := GetRequest(fmt.Sprintf("%s/event/test1/send", server.URL))
 			require.Nil(t, err)
 			require.Equal(t, 204, status)
 		})
 
-	status, _, err := GetRequest(fmt.Sprintf("%s/v1/event/test1/wait?maxwait=100", server.URL))
+	status, _, err := GetRequest(fmt.Sprintf("%s/event/test1/wait?maxwait=100", server.URL))
 	require.Nil(t, err)
 	require.Equal(t, 204, status)
 }
