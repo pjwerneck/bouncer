@@ -11,6 +11,7 @@ type Watchdog struct {
 	mu     *sync.Mutex
 	waitC  chan bool
 	resetC chan bool
+	Stats  *Metrics
 }
 
 var watchdogs = map[string]*Watchdog{}
@@ -88,4 +89,16 @@ func (watchdog *Watchdog) Wait(maxwait time.Duration) (err error) {
 
 func (watchdog *Watchdog) GetStats() *Metrics {
 	return nil
+}
+
+func getWatchdogStats(name string) (stats *Metrics, err error) {
+	watchdogsMutex.Lock()
+	defer watchdogsMutex.Unlock()
+
+	watchdog, ok := watchdogs[name]
+	if !ok {
+		return nil, ErrNotFound
+	}
+
+	return watchdog.Stats, nil
 }

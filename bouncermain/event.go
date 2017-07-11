@@ -11,6 +11,7 @@ type Event struct {
 	acquireC chan bool
 	sendL    *sync.Mutex
 	closed   bool
+	Stats    *Metrics
 }
 
 var events = map[string]*Event{}
@@ -65,4 +66,16 @@ func (event *Event) Send() (err error) {
 
 func (event *Event) GetStats() *Metrics {
 	return nil
+}
+
+func getEventStats(name string) (stats *Metrics, err error) {
+	eventsMutex.Lock()
+	defer eventsMutex.Unlock()
+
+	event, ok := events[name]
+	if !ok {
+		return nil, ErrNotFound
+	}
+
+	return event.Stats, nil
 }

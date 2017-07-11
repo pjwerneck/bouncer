@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/pquerna/ffjson/ffjson"
 )
 
 func TokenBucketAcquireHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -20,7 +21,7 @@ func TokenBucketAcquireHandler(w http.ResponseWriter, r *http.Request, ps httpro
 	}
 
 	if err == nil {
-		err = bucket.Acquire(req.MaxWait)
+		err = bucket.Acquire(req.MaxWait, req.Arrival)
 		rep.Status = http.StatusNoContent
 	}
 
@@ -146,6 +147,39 @@ func WatchdogKickHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	if err == nil {
 		err = watchdog.Kick(req.Expires)
 		rep.Status = http.StatusNoContent
+	}
+
+	rep.WriteResponse(w, r, err)
+}
+
+func TokenBucketStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	ViewStats(w, r, ps, getTokenBucketStats)
+}
+
+func SemaphoreStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	ViewStats(w, r, ps, getTokenBucketStats)
+}
+
+func EventStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	ViewStats(w, r, ps, getTokenBucketStats)
+}
+
+func WatchdogStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	ViewStats(w, r, ps, getTokenBucketStats)
+}
+
+func ViewStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params, f statsFunc) {
+	rep := newReply()
+
+	stats, err := f(ps[0].Value)
+	if err == nil {
+		buf, _ := ffjson.Marshal(stats)
+		rep.Body = string(buf)
+		rep.Status = http.StatusOK
+	}
+
+	if err == ErrNotFound {
+		rep.Status = http.StatusNotFound
 	}
 
 	rep.WriteResponse(w, r, err)

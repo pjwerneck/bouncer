@@ -110,6 +110,7 @@ func (semaphore *Semaphore) Acquire(maxwait time.Duration, expires time.Duration
 	if ok {
 		token = key
 		atomic.AddUint64(&semaphore.Stats.Reacquired, 1)
+		logger.Debugf("semaphore reacquired: name=%v, key=%v", semaphore.Name, token)
 		return token, nil
 	}
 
@@ -125,26 +126,42 @@ func (semaphore *Semaphore) Acquire(maxwait time.Duration, expires time.Duration
 
 		if maxwait == 0 {
 			atomic.AddUint64(&semaphore.Stats.TimedOut, 1)
+			logger.Debugf("semaphore acquire timed out: name=%v, maxwait=%v", semaphore.Name, maxwait)
 			return "", ErrTimedOut
 		}
 
 		if maxwait > 0 && time.Since(started) >= maxwait {
 			atomic.AddUint64(&semaphore.Stats.TimedOut, 1)
+			logger.Debugf("semaphore acquire timed out: name=%v, maxwait=%v", semaphore.Name, maxwait)
 			return "", ErrTimedOut
 		}
 
 		time.Sleep(time.Duration(100) * time.Millisecond)
 	}
 
+	logger.Debugf("semaphore acquired: name=%v, key=%v", semaphore.Name, token)
 	return token, nil
 }
 
 func (semaphore *Semaphore) Release(key string) error {
 	err := semaphore.delKey(key)
 	atomic.AddUint64(&semaphore.Stats.Released, 1)
+	logger.Debugf("semaphore released: name=%v, key=%v", semaphore.Name, key)
 	return err
 }
 
 func (semaphore *Semaphore) GetStats() *Metrics {
 	return semaphore.Stats
+}
+
+func getSemaphoreStats(name string) (stats *Metrics, err error) {
+	semaphoresMutex.Lock()
+	defer semaphoresMutex.Unlock()
+
+	semaphore, ok := semaphores[name]
+	if !ok {
+		return nil, ErrNotFound
+	}
+
+	return semaphore.Stats, nil
 }

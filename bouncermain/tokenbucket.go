@@ -70,7 +70,7 @@ func (bucket *TokenBucket) refill() {
 	}
 }
 
-func (bucket *TokenBucket) Acquire(maxwait time.Duration) (err error) {
+func (bucket *TokenBucket) Acquire(maxwait time.Duration, arrival time.Time) (err error) {
 
 	_, err = RecvTimeout(bucket.acquireC, maxwait)
 	if err != nil {
@@ -78,10 +78,27 @@ func (bucket *TokenBucket) Acquire(maxwait time.Duration) (err error) {
 		return err
 	}
 
+	wait := uint64(time.Now().Sub(arrival) / time.Millisecond)
+
+	logger.Debugf("wait time %v", wait)
+
 	atomic.AddUint64(&bucket.Stats.Acquired, 1)
+	atomic.AddUint64(&bucket.Stats.WaitTime, wait)
 	return nil
 }
 
 func (bucket *TokenBucket) GetStats() *Metrics {
 	return bucket.Stats
+}
+
+func getTokenBucketStats(name string) (stats *Metrics, err error) {
+	bucketsMutex.Lock()
+	defer bucketsMutex.Unlock()
+
+	bucket, ok := buckets[name]
+	if !ok {
+		return nil, ErrNotFound
+	}
+
+	return bucket.Stats, nil
 }
