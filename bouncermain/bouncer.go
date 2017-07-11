@@ -35,15 +35,17 @@ func setupLogging() {
 }
 
 func loadConfig() {
-	viper.SetDefault("host", "0.0.0.0")
-	viper.SetDefault("port", 5505)
-	viper.SetDefault("logLevel", "DEBUG")
+	viper.SetDefault("myHost", "0.0.0.0")
+	viper.SetDefault("myPort", 5505)
+	viper.SetDefault("logLevel", "INFO")
 	viper.SetDefault("readTimeout", 30)
 	viper.SetDefault("writeTimeout", 30)
 
-	viper.BindEnv("host", "HOST")
-	viper.BindEnv("port", "PORT")
-	viper.BindEnv("logLevel", "LOG_LEVEL")
+	viper.BindEnv("myHost", "BOUNCER_HOST")
+	viper.BindEnv("myPort", "BOUNCER_PORT")
+	viper.BindEnv("logLevel", "BOUNCER_LOGLEVEL")
+	viper.BindEnv("readTimeout", "BOUNCER_READ_TIMEOUT")
+	viper.BindEnv("writeTimeout", "BOUNCER_WRITE_TIMEOUT")
 }
 
 func Main() {
@@ -51,7 +53,7 @@ func Main() {
 	loadConfig()
 	setupLogging()
 
-	addr := fmt.Sprintf("%v:%v", viper.GetString("host"), viper.GetInt("port"))
+	addr := fmt.Sprintf("%v:%v", viper.GetString("myHost"), viper.GetInt("myPort"))
 
 	logger.Info("Starting...")
 	logger.Infof("Listening on %v", addr)
