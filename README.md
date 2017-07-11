@@ -7,8 +7,6 @@
 ![bouncer logo](http://www.pedrowerneck.com/images/bouncer-sm.png)
 
 
-**WARNING: This is alpha code and may not be suitable for production usage.**
-
 This is a simple RPC service to provide throttling, rate-limiting, and synchronization for distributed applications. It's intended as a replacement for makeshift solutions using memcached or Redis.
 
 ## Examples
@@ -17,44 +15,44 @@ This is a simple RPC service to provide throttling, rate-limiting, and synchroni
 
 You need a token bucket. Just do this before each operation:
 
-    $ curl http://myhost:5505/v1/tokenbucket/myapp/acquire
+    $ curl http://myhost:5505/tokenbucket/myapp/acquire
 
 #### *"How to increase the limit to twenty per second?"*
 
 Use `size=20`:
 
-    $ curl http://myhost:5505/v1/tokenbucket/myapp/acquire?size=20
+    $ curl http://myhost:5505/tokenbucket/myapp/acquire?size=20
 
 #### *"But I can't have all twenty starting at the same time!"*
 
 If you don't want bursts of activity, set interval to `1000/rate`:
 
-    $ curl http://myhost:5505/v1/tokenbucket/myapp/acquire?interval=50
+    $ curl http://myhost:5505/tokenbucket/myapp/acquire?interval=50
 
 #### *"What if I have a resource that can be used by only one client at a time?"*
 
 Use a semaphore:
 
-    $ KEY=$(curl http://myhost:5505/v1/semaphore/myapp/acquire)
+    $ KEY=$(curl http://myhost:5505/semaphore/myapp/acquire)
     $ # do something
-    $ curl http://myhost:5505/v1/semaphore/myapp/release?key=$KEY
+    $ curl http://myhost:5505/semaphore/myapp/release?key=$KEY
 
 #### *"Now I need to limit it to ten concurrent clients."*
 
 Use a semaphore with `size=10`:
 
-    $ KEY=$(curl http://myhost:5505/v1/semaphore/myapp/acquire?size=10)
+    $ KEY=$(curl http://myhost:5505/semaphore/myapp/acquire?size=10)
     $ # do something
-    $ curl http://myhost:5505/v1/semaphore/myapp/release?key=$KEY
+    $ curl http://myhost:5505/semaphore/myapp/release?key=$KEY
 
 #### *"I have some clients that must wait for something else to finish."*
 
 You can use an event:
 
     $ # do this on any number of waiting clients
-    $ curl http://myhost:5505/v1/event/myapp/wait
+    $ curl http://myhost:5505/event/myapp/wait
     $ # and this on the client doing the operation, when it's finished
-    $ curl http://myhost:5505/v1/event/myapp/send?message=wakeup
+    $ curl http://myhost:5505/event/myapp/send?message=wakeup
 
 
 ## API
@@ -128,7 +126,7 @@ The current state of the controller is incompatible with this request.
 The `tokenbucket` is an implementation of the Token Bucket algorithm. The bucket has a limited size, and every `interval` the bucket is refilled to capacity with tokens. Each `acquire` request takes a token out of the bucket, or waits for a token to be added if the bucket is empty.
 
 ### Acquire
-***`/v1/tokenbucket/<name>/acquire <size=1> <interval=1000> <maxwait=-1>`***
+***`/tokenbucket/<name>/acquire <size=1> <interval=1000> <maxwait=-1>`***
 
 In most cases you can simply set `size` to the desired number of requests per second.
 
@@ -146,7 +144,7 @@ Bursts of activity can happen if there are many clients waiting for a refill. If
 A `semaphore` can be used to control concurrent access to shared resources.
 
 ### Acquire
-***`/v1/semaphore/<name>/acquire <size=1> <key=?> <expires=60000> <maxwait=-1>`***
+***`/semaphore/<name>/acquire <size=1> <key=?> <expires=60000> <maxwait=-1>`***
 
 A semaphore has a number of slots equal to `size`. An `acquire` request stores the `key` value in the next available slot. If there are no available slots, the request waits until `maxwait`.
 
@@ -162,7 +160,7 @@ Reusing a key that's already being held doesn't result in an error and will retu
 - `408 Request Timeout`, if `maxwait` was exceeded.
 
 ### Release
-***`/v1/semaphore/<name>/release <key>`***
+***`/semaphore/<name>/release <key>`***
 
 Releases the previously acquired hold. A release always returns immediately.
 
@@ -176,7 +174,7 @@ Releases the previously acquired hold. A release always returns immediately.
 An `event` can be used to synchronize clients, when you want all of them to start doing something immediately after a signal.
 
 ### Wait
-***`/v1/event/<name>/wait <maxwait=-1>`***
+***`/event/<name>/wait <maxwait=-1>`***
 
 Keeps the client waiting for a signal.
 
@@ -186,7 +184,7 @@ Keeps the client waiting for a signal.
 - `408 Request Timeout`, if `maxwait` was exceeded.
 
 ### Send
-***`/v1/event/<name>/send`***
+***`/event/<name>/send`***
 
 Sends the signal to all waiting requests.
 
@@ -200,7 +198,7 @@ Sends the signal to all waiting requests.
 A `watchdog` can be used to synchronize clients to do something when a recurring request takes too long.
 
 ### Wait
-***`/v1/watchdog/<name>/wait <maxwait=-1>`***
+***`/watchdog/<name>/wait <maxwait=-1>`***
 
 Keeps the client waiting for a signal
 
@@ -210,22 +208,10 @@ Keeps the client waiting for a signal
 - `408 Request Timeout`, if `maxwait` was exceeded.
 
 ### Kick
-***`/v1/watchdog/<name>/kick <expires=60000>`***
+***`/watchdog/<name>/kick <expires=60000>`***
 
 Resets the watchdog timer. A signal will be sent to the clients if another `kick` isn't received within the `expires` time.
 
 **Responses:**
 
 - `204 No Content` always.
-
-## High Availability
-
-TODO
-
-## Performance Tips
-
-TODO
-
-## FAQ
-
-TODO
