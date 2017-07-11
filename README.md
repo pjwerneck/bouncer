@@ -220,7 +220,28 @@ Resets the watchdog timer. A signal will be sent to the clients if another `kick
 
 ## High Availability
 
-TODO
+Since the bouncer can easily become a single point of failure, two instances can run in a high-availability master-slave scheme, using the [binary-star pattern](http://zguide.zeromq.org/page:all#High-Availability-Pair-Binary-Star-Pattern). The instances are started with an initial state, PRIMARY or SECONDARY, assuming the role of MASTER and SLAVE accordingly.
+
+Some premises are adopted to manage the current state of instances and promote or demote as needed.
+
+- Only an instance in MASTER state will sucessfully respond to control requests. An instance in any other state will respond to all requests with `503 Service Unavailable`.
+- Once an instance becomes the MASTER, the only way it leaves the state is by restarting, going back to its initial state, PRIMARY or SECONDARY.
+- Split-brain syndrome is dealt with a pessimistic approach: all MASTER instances commit suicide and restart.
+
+Given those premises, clients have the following state transition table to interpret received events.
+
+| EVENTS         | PRIMARY      | SECONDARY    | MASTER        | SLAVE         |
+|----------------|--------------|--------------|---------------|---------------|
+| PEER_PRIMARY   | CONFIG_ERROR | PASS         | PASS          | PASS          |
+| PEER_SECONDARY | MASTER       | CONFIG_ERROR | PASS          | PASS          |
+| PEER_MASTER    | SLAVE        | SLAVE        | RESTART       | PASS          |
+| PEER_SLAVE     | MASTER       | MASTER       | PASS          | RESTART       |
+| CLIENT_REQUEST | PASS         | PASS         | REPLY         | PASS          |
+| PEER_TIMEOUT   | MASTER       | MASTER       | PASS          | MASTER        |
+
+
+For most controllers, any changes to the state in the MASTER instance will be immediately shared with the SLAVE. The only exception is the number of tokens in a token bucket. Since clients initialize non-existent buckets with every request, synchronizing all changes would essentially double the traffic for little gain. The worst possible case is clients losing one refresh period during the switch, which will be one second in most cases. This means that during this second the rate may vary by 
+
 
 ## Performance Tips
 
