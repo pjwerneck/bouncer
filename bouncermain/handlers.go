@@ -3,8 +3,8 @@ package bouncermain
 import (
 	"net/http"
 
+	"encoding/json"
 	"github.com/julienschmidt/httprouter"
-	"github.com/pquerna/ffjson/ffjson"
 )
 
 func TokenBucketAcquireHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
@@ -173,7 +173,7 @@ func ViewStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params, f s
 
 	stats, err := f(ps[0].Value)
 	if err == nil {
-		buf, _ := ffjson.Marshal(stats)
+		buf, _ := json.Marshal(stats)
 		rep.Body = string(buf)
 		rep.Status = http.StatusOK
 	}
