@@ -157,15 +157,15 @@ func TokenBucketStats(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 }
 
 func SemaphoreStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	ViewStats(w, r, ps, getTokenBucketStats)
+	ViewStats(w, r, ps, getSemaphoreStats)
 }
 
 func EventStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	ViewStats(w, r, ps, getTokenBucketStats)
+	ViewStats(w, r, ps, getEventStats)
 }
 
 func WatchdogStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	ViewStats(w, r, ps, getTokenBucketStats)
+	ViewStats(w, r, ps, getWatchdogStats)
 }
 
 func ViewStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params, f statsFunc) {
