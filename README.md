@@ -4,7 +4,7 @@
 [![Build Status](https://travis-ci.org/pjwerneck/bouncer.svg?branch=master)](https://travis-ci.org/pjwerneck/bouncer)
 
 
-![bouncer logo](http://www.pedrowerneck.com/images/bouncer-sm.png)
+![bouncer logo](https://s3.amazonaws.com/www.pedrowerneck.com/images/bouncer-sm.png)
 
 
 This is a simple RPC service to provide throttling, rate-limiting, and synchronization for distributed applications. It's intended as a replacement for makeshift solutions using memcached or Redis.
