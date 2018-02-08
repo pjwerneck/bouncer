@@ -101,7 +101,7 @@ func (semaphore *Semaphore) delKey(key string) error {
 func (semaphore *Semaphore) Acquire(maxwait time.Duration, expires time.Duration, key string) (token string, err error) {
 	// generate a random uuid as key if not provided
 	if key == "" {
-		key = uuid.NewV4().String()
+		key = uuid.Must(uuid.NewV4()).String()
 	}
 
 	// if there's an active token with this key, reacquire and return immediately
