@@ -215,3 +215,43 @@ Resets the watchdog timer. A signal will be sent to the clients if another `kick
 **Responses:**
 
 - `204 No Content` always.
+
+
+## Environment Variables
+
+The following environment variables can be used to customize server behavior.
+
+### BOUNCER_HOST
+***`BOUNCER_HOST=0.0.0.0`***
+
+The IP address the server will listen to. Defaults to `0.0.0.0`, i.e. all IP addresses on the host machine.
+
+### BOUNCER_PORT
+***`BOUNCER_PORT=5505`***
+
+The port the server will listen to. Defaults to `5505`.
+
+### BOUNCER_LOGLEVEL
+***`BOUNCER_LOGLEVEL=INFO`***
+
+The server log level. Acceptes values are:
+
+- `DEBUG`
+- `INFO`
+- `NOTICE`
+- `WARNING`
+- `ERROR`
+- `CRITICAL`
+
+### BOUNCER_READ_TIMEOUT
+***`BOUNCER_READ_TIMEOUT=30`***
+
+The HTTP server read timeout, in seconds. Defaults to `30`.
+
+
+### BOUNCER_WRITE_TIMEOUT
+***`BOUNCER_WRITE_TIMEOUT=30`***
+
+The HTTP server write timeout, in seconds. Defaults to `30`.
+
+If your controllers require a `maxwait` time that exceeds the default write timeout of 30 seconds, increase the timeout value accordingly, otherwise the server might close the connection before the response is available.

@@ -73,6 +73,7 @@ func (semaphore *Semaphore) setKey(key string, expires time.Duration) bool {
 	if expires > 0 {
 		semaphore.timers[key] = time.AfterFunc(expires,
 			func() {
+				logger.Debugf("semaphore expired: name=%v, key=%v", semaphore.Name, key)
 				semaphore.delKey(key)
 				atomic.AddUint64(&semaphore.Stats.Expired, 1)
 			})
