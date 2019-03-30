@@ -10,6 +10,7 @@ func Router() *httprouter.Router {
 	r.GET("/tokenbucket/:name/acquire", TokenBucketAcquireHandler)
 	r.GET("/semaphore/:name/acquire", SemaphoreAcquireHandler)
 	r.GET("/semaphore/:name/release", SemaphoreReleaseHandler)
+	r.GET("/semaphore/:name/renew", SemaphoreRenewHandler)
 	r.GET("/event/:name/wait", EventWaitHandler)
 	r.GET("/event/:name/send", EventSendHandler)
 	r.GET("/watchdog/:name/kick", WatchdogKickHandler)

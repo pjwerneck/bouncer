@@ -72,6 +72,29 @@ func SemaphoreReleaseHandler(w http.ResponseWriter, r *http.Request, ps httprout
 	rep.WriteResponse(w, r, err)
 }
 
+func SemaphoreRenewHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	var err error
+	var semaphore *Semaphore
+
+	req := newRequest()
+	rep := newReply()
+
+	err = req.Decode(r.URL.Query())
+	if err == nil {
+		logger.Debugf("semaphore.renew: %+v", req)
+		semaphore, err = getSemaphore(ps[0].Value, req.Size)
+	}
+
+	if err == nil {
+		err = semaphore.Renew(req.Expires, req.Key)
+		rep.Status = http.StatusNoContent
+
+		logger.Debugf("semaphore.keys: %+v", semaphore.Keys)
+	}
+
+	rep.WriteResponse(w, r, err)
+}
+
 func EventWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var err error
 	var event *Event

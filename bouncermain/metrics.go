@@ -10,6 +10,7 @@ type Metrics struct {
 	TimedOut   uint64 `json:"timed_out"`
 	Expired    uint64 `json:"expired"`
 	Reacquired uint64 `json:"reacquired"`
+	Renewed    uint64 `json:"renewed"`
 	CreatedAt  string `json:"created_at"`
 }
 

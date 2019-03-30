@@ -99,6 +99,34 @@ func (semaphore *Semaphore) delKey(key string) error {
 	return nil
 }
 
+func (semaphore *Semaphore) renewKey(key string, expires time.Duration) error {
+	semaphore.mu.Lock()
+	defer semaphore.mu.Unlock()
+
+	// stop and remove old timer
+	if t, ok := semaphore.timers[key]; ok {
+		t.Stop()
+		delete(semaphore.timers, key)
+	} else {
+		return ErrKeyError
+	}
+
+	// reset expiration
+	semaphore.Keys[key] = expires
+
+	// set new timer
+	if expires > 0 {
+		semaphore.timers[key] = time.AfterFunc(expires,
+			func() {
+				logger.Debugf("semaphore expired: name=%v, key=%v", semaphore.Name, key)
+				semaphore.delKey(key)
+				atomic.AddUint64(&semaphore.Stats.Expired, 1)
+			})
+	}
+
+	return nil
+}
+
 func (semaphore *Semaphore) Acquire(maxwait time.Duration, expires time.Duration, key string) (token string, err error) {
 	// generate a random uuid as key if not provided
 	if key == "" {
@@ -148,6 +176,13 @@ func (semaphore *Semaphore) Release(key string) error {
 	err := semaphore.delKey(key)
 	atomic.AddUint64(&semaphore.Stats.Released, 1)
 	logger.Debugf("semaphore released: name=%v, key=%v", semaphore.Name, key)
+	return err
+}
+
+func (semaphore *Semaphore) Renew(expires time.Duration, key string) error {
+	err := semaphore.renewKey(key, expires)
+	atomic.AddUint64(&semaphore.Stats.Renewed, 1)
+	logger.Debugf("semaphore renewed: name=%v, key=%v", semaphore.Name, key)
 	return err
 }
 

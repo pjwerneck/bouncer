@@ -103,6 +103,28 @@ func TestSemaphoreAcquireAndRelease(t *testing.T) {
 
 }
 
+func TestSemaphoreAcquireRenewAndRelease(t *testing.T) {
+	url := fmt.Sprintf("%s/semaphore/test1/acquire?maxwait=1", server.URL)
+
+	status, key, err := GetRequest(url)
+	require.Nil(t, err)
+	require.Equal(t, 200, status)
+
+	status, _, err = GetRequest(url)
+	require.Nil(t, err)
+	require.Equal(t, 408, status)
+
+	url = fmt.Sprintf("%s/semaphore/test1/renew?key=%s", server.URL, key)
+	status, _, err = GetRequest(url)
+	require.Nil(t, err)
+	require.Equal(t, 204, status)
+
+	url = fmt.Sprintf("%s/semaphore/test1/release?maxwait=1&key=%s", server.URL, key)
+	status, key, err = GetRequest(url)
+	require.Nil(t, err)
+	require.Equal(t, 204, status)
+}
+
 func TestEventWaitAndSend(t *testing.T) {
 	time.AfterFunc(time.Duration(1e7),
 		func() {
