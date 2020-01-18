@@ -15,7 +15,7 @@ func Router() *httprouter.Router {
 	r.GET("/watchdog/:name/kick", WatchdogKickHandler)
 	r.GET("/watchdog/:name/wait", WatchdogWaitHandler)
 
-	r.GET("/tokenbucket/:name", TokenBucketStats)
+	r.GET("/tokenbucket/:name/stats", TokenBucketStats)
 	r.GET("/semaphore/:name/stats", SemaphoreStats)
 	r.GET("/event/:name/stats", EventStats)
 	r.GET("/watchdog/:name/stats", WatchdogStats)
