@@ -234,7 +234,7 @@ The port the server will listen to. Defaults to `5505`.
 ### BOUNCER_LOGLEVEL
 ***`BOUNCER_LOGLEVEL=INFO`***
 
-The server log level. Acceptes values are:
+The server log level. Accepted values are:
 
 - `DEBUG`
 - `INFO`
