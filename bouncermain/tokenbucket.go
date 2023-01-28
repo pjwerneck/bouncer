@@ -78,7 +78,7 @@ func (bucket *TokenBucket) Acquire(maxwait time.Duration, arrival time.Time) (er
 		return err
 	}
 
-	wait := uint64(time.Now().Sub(arrival) / time.Millisecond)
+	wait := uint64(time.Since(arrival) / time.Millisecond)
 
 	logger.Debugf("wait time %v", wait)
 
