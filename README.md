@@ -11,6 +11,12 @@ This is a simple RPC service to provide throttling, rate-limiting, and synchroni
 
 ## Examples
 
+Start a local container:
+
+```bash!
+$ docker run -p 5505:5505 pjwerneck/bouncer:latest
+```
+
 #### *"I want to limit something to only one operation per second"*
 
 You need a token bucket. Just do this before each operation:
