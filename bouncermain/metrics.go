@@ -1,7 +1,5 @@
 package bouncermain
 
-import ()
-
 type Metrics struct {
 	Nominal    uint64 `json:"nominal"`
 	Acquired   uint64 `json:"acquired"`
