@@ -1,7 +1,7 @@
 # bouncer
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/pjwerneck/bouncer)](https://goreportcard.com/report/github.com/pjwerneck/bouncer)
-[![Build Status](https://travis-ci.org/pjwerneck/bouncer.svg?branch=master)](https://travis-ci.org/pjwerneck/bouncer)
+[![Build Status](https://github.com/pjwerneck/bouncer/actions/workflows/go.yml/badge.svg?branch=master)](https://github.com/pjwerneck/bouncer/actions/workflows/go.yml?branch=master)
 
 
 ![bouncer logo](https://s3.amazonaws.com/www.pedrowerneck.com/images/bouncer-sm.png)
