@@ -222,6 +222,10 @@ Resets the watchdog timer. A signal will be sent to the clients if another `kick
 
 - `204 No Content` always.
 
+### Health Check
+***`/.well-known/ready`***
+
+Returns a `200 OK` if the server is running. This is useful for health checks.
 
 ## Environment Variables
 
