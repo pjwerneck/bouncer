@@ -187,5 +187,5 @@ func ViewStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params, f s
 }
 
 func WellKnownReady(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
-	fmt.Fprint(w, "I'm ready\n")
+	fmt.Fprint(w, "I'm ready!\n")
 }

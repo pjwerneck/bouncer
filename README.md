@@ -227,6 +227,10 @@ Resets the watchdog timer. A signal will be sent to the clients if another `kick
 
 Returns a `200 OK` if the server is running. This is useful for health checks.
 
+**Responses:**
+
+- `200 OK` always with the text "I'm ready!"
+
 ## Environment Variables
 
 The following environment variables can be used to customize server behavior.
