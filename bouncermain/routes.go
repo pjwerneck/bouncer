@@ -20,5 +20,7 @@ func Router() *httprouter.Router {
 	r.GET("/event/:name/stats", EventStats)
 	r.GET("/watchdog/:name/stats", WatchdogStats)
 
+	r.GET("/.well-known/ready", WellKnownReady)
+
 	return r
 }
