@@ -3,7 +3,6 @@ package bouncermain_test
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,7 +14,6 @@ import (
 
 var (
 	server *httptest.Server
-	reader io.Reader
 )
 
 func init() {
@@ -33,7 +31,7 @@ func GetRequest(url string) (status int, body string, err error) {
 		return
 	}
 
-	bs, err := ioutil.ReadAll(rep.Body)
+	bs, err := io.ReadAll(rep.Body)
 	if err != nil {
 		return
 	}
@@ -97,7 +95,7 @@ func TestSemaphoreAcquireAndRelease(t *testing.T) {
 	require.Equal(t, 408, status)
 
 	url = fmt.Sprintf("%s/semaphore/test1/release?maxwait=1&key=%s", server.URL, key)
-	status, key, err = GetRequest(url)
+	status, _, err = GetRequest(url)
 	require.Nil(t, err)
 	require.Equal(t, 204, status)
 

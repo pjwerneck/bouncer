@@ -1,7 +1,7 @@
 # bouncer
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/pjwerneck/bouncer)](https://goreportcard.com/report/github.com/pjwerneck/bouncer)
-[![Build Status](https://travis-ci.org/pjwerneck/bouncer.svg?branch=master)](https://travis-ci.org/pjwerneck/bouncer)
+[![Build Status](https://github.com/pjwerneck/bouncer/actions/workflows/go.yml/badge.svg?branch=master)](https://github.com/pjwerneck/bouncer/actions/workflows/go.yml?branch=master)
 
 
 ![bouncer logo](https://s3.amazonaws.com/www.pedrowerneck.com/images/bouncer-sm.png)
@@ -10,6 +10,12 @@
 This is a simple RPC service to provide throttling, rate-limiting, and synchronization for distributed applications. It's intended as a replacement for makeshift solutions using memcached or Redis.
 
 ## Examples
+
+Start a local container:
+
+```bash!
+$ docker run -p 5505:5505 pjwerneck/bouncer:latest
+```
 
 #### *"I want to limit something to only one operation per second"*
 
@@ -216,6 +222,14 @@ Resets the watchdog timer. A signal will be sent to the clients if another `kick
 
 - `204 No Content` always.
 
+### Health Check
+***`/.well-known/ready`***
+
+Returns a `200 OK` if the server is running. This is useful for health checks.
+
+**Responses:**
+
+- `200 OK` always with the text "I'm ready!"
 
 ## Environment Variables
 

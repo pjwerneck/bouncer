@@ -1,6 +1,7 @@
 package bouncermain
 
 import (
+	"fmt"
 	"net/http"
 
 	"encoding/json"
@@ -183,4 +184,8 @@ func ViewStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params, f s
 	}
 
 	rep.WriteResponse(w, r, err)
+}
+
+func WellKnownReady(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	fmt.Fprint(w, "I'm ready!\n")
 }
