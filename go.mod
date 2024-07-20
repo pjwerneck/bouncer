@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/gofrs/uuid v4.4.0+incompatible
-	github.com/gorilla/schema v1.2.0
+	github.com/gorilla/schema v1.4.1
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/op/go-logging v0.0.0-20160315200505-970db520ece7
 	github.com/spf13/viper v1.15.0
