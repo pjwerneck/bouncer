@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/pjwerneck/bouncer/bouncermain"
+	_ "github.com/pjwerneck/bouncer/docs"
 
 	"flag"
 	"log"
@@ -11,6 +12,10 @@ import (
 )
 
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+
+// @title Bouncer API
+// @version 0.1.6
+// @description Bouncer is a simple HTTP server that provides rate limiting and synchronization primitives for distributed systems.
 
 func main() {
 	flag.Parse()
@@ -25,7 +30,7 @@ func main() {
 
 	go bouncermain.Main()
 
-	terminate := make(chan os.Signal)
+	terminate := make(chan os.Signal, 1)
 	signal.Notify(terminate, os.Interrupt)
 	<-terminate
 

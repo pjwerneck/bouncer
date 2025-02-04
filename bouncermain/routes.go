@@ -2,10 +2,16 @@ package bouncermain
 
 import (
 	"github.com/julienschmidt/httprouter"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 func Router() *httprouter.Router {
 	r := httprouter.New()
+
+	// Swagger documentation endpoint
+	r.Handler("GET", "/docs/*any", httpSwagger.Handler(
+		httpSwagger.URL("/docs/doc.json"), // The url pointing to API definition
+	))
 
 	r.GET("/tokenbucket/:name/acquire", TokenBucketAcquireHandler)
 	r.GET("/semaphore/:name/acquire", SemaphoreAcquireHandler)

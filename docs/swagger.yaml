@@ -1,0 +1,227 @@
+basePath: /
+host: localhost:5505
+info:
+  contact: {}
+  description: A simple rate limiting and synchronization service for distributed
+    systems
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  title: Bouncer API
+  version: 0.1.6
+paths:
+  /.well-known/ready:
+    get:
+      description: Check if the service is ready
+      responses:
+        "200":
+          description: Service is ready
+          schema:
+            type: string
+      summary: Readiness check
+      tags:
+      - Health
+  /event/{name}/send:
+    get:
+      description: Trigger an event
+      parameters:
+      - description: Event name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "204":
+          description: Event sent successfully
+        "400":
+          description: Bad Request - invalid parameters
+          schema:
+            type: string
+        "404":
+          description: Not Found - event handler not found
+          schema:
+            type: string
+        "409":
+          description: Conflict - event already sent
+          schema:
+            type: string
+      summary: Send an event
+      tags:
+      - Event
+  /event/{name}/wait:
+    get:
+      description: Wait for an event to be triggered
+      parameters:
+      - description: Event name
+        in: path
+        name: name
+        required: true
+        type: string
+      - default: -1
+        description: Maximum wait time
+        in: query
+        name: maxWait
+        type: integer
+      produces:
+      - text/plain
+      responses:
+        "204":
+          description: Event signal received
+          schema:
+            type: string
+        "400":
+          description: Bad Request - invalid parameters
+          schema:
+            type: string
+        "404":
+          description: Not Found - event handler not found
+          schema:
+            type: string
+        "408":
+          description: Request timeout
+          schema:
+            type: string
+      summary: Wait for an event
+      tags:
+      - Event
+  /semaphore/{name}/acquire:
+    get:
+      description: Acquire a semaphore lock.
+      parameters:
+      - description: Semaphore name
+        in: path
+        name: name
+        required: true
+        type: string
+      - default: 1
+        description: Semaphore size
+        in: query
+        name: size
+        type: integer
+      - default: -1
+        description: Maximum wait time
+        in: query
+        name: maxWait
+        type: integer
+      - default: 60000
+        description: Expiration time
+        in: query
+        name: expires
+        type: integer
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: The semaphore release key
+          schema:
+            type: string
+        "400":
+          description: Bad Request - invalid parameters
+          schema:
+            type: string
+        "404":
+          description: Not Found - semaphore not found
+          schema:
+            type: string
+        "408":
+          description: Request Timeout - `maxWait` exceeded
+          schema:
+            type: string
+      summary: Acquire a semaphore
+      tags:
+      - Semaphore
+  /semaphore/{name}/release:
+    get:
+      description: Release a semaphore lock
+      parameters:
+      - description: Semaphore name
+        in: path
+        name: name
+        required: true
+        type: string
+      - default: 1
+        description: Semaphore size
+        in: query
+        name: size
+        type: integer
+      - description: Release key
+        in: query
+        name: key
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "204":
+          description: Semaphore released successfully
+        "400":
+          description: Bad Request - invalid parameters
+          schema:
+            type: string
+        "404":
+          description: Not Found - semaphore not found
+          schema:
+            type: string
+        "409":
+          description: Conflict - key is invalid or already released
+          schema:
+            type: string
+      summary: Release a semaphore
+      tags:
+      - Semaphore
+  /tokenbucket/{name}/acquire:
+    get:
+      description: |-
+        Every `interval` milliseconds, the bucket is refilled with `size` tokens.
+        Each acquire request takes one token out of the bucket, or waits up to `maxWait` milliseconds for a token to be available.
+      parameters:
+      - description: Token bucket name
+        in: path
+        name: name
+        required: true
+        type: string
+      - default: 1
+        description: Bucket size
+        in: query
+        name: size
+        type: integer
+      - default: 1000
+        description: Refill interval
+        in: query
+        name: interval
+        type: integer
+      - default: -1
+        description: Maximum wait time
+        in: query
+        name: maxWait
+        type: integer
+      produces:
+      - text/plain
+      responses:
+        "204":
+          description: Token acquired successfully
+          schema:
+            type: string
+        "400":
+          description: Bad Request - invalid parameters
+          schema:
+            type: string
+        "404":
+          description: Not Found - token bucket not found
+          schema:
+            type: string
+        "408":
+          description: Request Timeout - `maxWait` exceeded
+          schema:
+            type: string
+      summary: Acquire a token from a token bucket
+      tags:
+      - TokenBucket
+swagger: "2.0"
+tags:
+- name: TokenBucket
+- name: Semaphore
+- name: Event
+- name: Health
