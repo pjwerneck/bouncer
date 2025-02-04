@@ -1,16 +1,38 @@
-FROM golang:1.19 as builder
-# copy the source code
-COPY . /go/src/github.com/pjwerneck/bouncer
-WORKDIR /go/src/github.com/pjwerneck/bouncer
-# download dependencies
-RUN go mod download
-# build the binary
-RUN CGO_ENABLED=0 go build -o /main
+FROM golang:1.23-alpine AS builder
 
+# Install build dependencies
+RUN apk add --no-cache git ca-certificates tzdata
 
-FROM scratch AS runner
-# copy the binary
-WORKDIR /
-COPY --from=builder /main /main
-# run the binary
-ENTRYPOINT ["/main"]
+WORKDIR /src
+COPY . .
+
+# Build optimized binary
+RUN CGO_ENABLED=0 go build \
+    -ldflags="-w -s \
+    -X main.version=$(git describe --tags --always) \
+    -X main.commit=$(git rev-parse HEAD) \
+    -X main.date=$(date -u +%Y-%m-%d)" \
+    -trimpath \
+    -a \
+    -tags netgo,osusergo \
+    -o /app/bouncer
+
+# Create minimal production image
+FROM scratch
+
+# Import from builder
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /app/bouncer /bouncer
+
+# Add metadata
+LABEL org.opencontainers.image.source="https://github.com/pjwerneck/bouncer" \
+      org.opencontainers.image.description="Rate limiting and synchronization service" \
+      org.opencontainers.image.licenses="MIT"
+
+# Use non-root user
+USER 65532:65532
+
+EXPOSE 5505
+
+ENTRYPOINT ["/bouncer"]
