@@ -1,8 +1,11 @@
 package bouncermain
 
 import (
+	"net/http"
 	"sync"
 	"time"
+
+	"github.com/julienschmidt/httprouter"
 )
 
 type Watchdog struct {
@@ -101,4 +104,48 @@ func getWatchdogStats(name string) (stats *Metrics, err error) {
 	}
 
 	return watchdog.Stats, nil
+}
+
+func WatchdogWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	var err error
+	var watchdog *Watchdog
+
+	req := newRequest()
+	rep := newReply()
+
+	err = req.Decode(r.URL.Query())
+	if err == nil {
+		watchdog, err = getWatchdog(ps[0].Value, req.Expires)
+	}
+
+	if err == nil {
+		err = watchdog.Wait(req.MaxWait)
+		rep.Status = http.StatusNoContent
+	}
+
+	rep.WriteResponse(w, r, err)
+}
+
+func WatchdogKickHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	var err error
+	var watchdog *Watchdog
+
+	req := newRequest()
+	rep := newReply()
+
+	err = req.Decode(r.URL.Query())
+	if err == nil {
+		watchdog, err = getWatchdog(ps[0].Value, req.Expires)
+	}
+
+	if err == nil {
+		err = watchdog.Kick(req.Expires)
+		rep.Status = http.StatusNoContent
+	}
+
+	rep.WriteResponse(w, r, err)
+}
+
+func WatchdogStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	ViewStats(w, r, ps, getWatchdogStats)
 }
