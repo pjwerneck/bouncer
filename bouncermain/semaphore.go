@@ -91,6 +91,15 @@ func (semaphore *Semaphore) setKey(key string, expires time.Duration) bool {
 			})
 	}
 
+	// Update max ever held while holding the mutex
+	current := uint64(len(semaphore.Keys))
+	for {
+		max := atomic.LoadUint64(&semaphore.Stats.MaxEverHeld)
+		if current <= max || atomic.CompareAndSwapUint64(&semaphore.Stats.MaxEverHeld, max, current) {
+			break
+		}
+	}
+
 	return true
 }
 
@@ -136,15 +145,6 @@ func (semaphore *Semaphore) Acquire(maxwait time.Duration, expires time.Duration
 			atomic.AddUint64(&semaphore.Stats.Acquired, 1)
 			wait := uint64(time.Since(started) / time.Millisecond)
 			atomic.AddUint64(&semaphore.Stats.TotalWaitTime, wait)
-
-			// Update max ever held
-			current := uint64(len(semaphore.Keys))
-			for {
-				max := atomic.LoadUint64(&semaphore.Stats.MaxEverHeld)
-				if current <= max || atomic.CompareAndSwapUint64(&semaphore.Stats.MaxEverHeld, max, current) {
-					break
-				}
-			}
 
 			break
 		}

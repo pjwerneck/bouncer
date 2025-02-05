@@ -22,6 +22,7 @@ build: docs
 	$(GOBUILD) $(LDFLAGS) -o $(APP_NAME)
 
 test:
+	$(GOCMD) clean -testcache
 	$(GOTEST) -v -race ./... -failfast
 
 # Add swag init command to docs target
