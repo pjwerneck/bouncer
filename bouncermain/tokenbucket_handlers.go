@@ -1,6 +1,7 @@
 package bouncermain
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"time"
@@ -80,6 +81,29 @@ func TokenBucketDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprou
 	DeleteHandler(w, r, ps, deleteTokenBucket)
 }
 
-func TokenBucketStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	ViewStats(w, r, ps, getTokenBucketStats)
+// TokenBucketStatsHandler godoc
+// @Summary View token bucket stats
+// @Description Get token bucket statistics
+// @Tags TokenBucket
+// @Produce json
+// @Param name path string true "Token bucket name"
+// @Param name body TokenBucketStats true "Token bucket statistics"
+// @Success 200 {object} TokenBucketStats "Token bucket statistics"
+// @Failure 404 {string} Reply "Not Found - token bucket not found"
+// @Router /tokenbucket/{name}/stats [get]
+func TokenBucketStatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	rep := newReply()
+
+	stats, err := getTokenBucketStats(ps[0].Value)
+	if err == nil {
+		buf, _ := json.Marshal(stats)
+		rep.Body = string(buf)
+		rep.Status = http.StatusOK
+	}
+
+	if err == ErrNotFound {
+		rep.Status = http.StatusNotFound
+	}
+
+	rep.WriteResponse(w, r, err)
 }

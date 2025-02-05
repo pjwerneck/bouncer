@@ -5,6 +5,17 @@ import (
 	"time"
 )
 
+type WatchdogStats struct {
+	Waited        uint64  `json:"waited"`
+	TimedOut      uint64  `json:"timed_out"`
+	Kicks         uint64  `json:"kicks"`
+	Triggered     uint64  `json:"triggered"`
+	TotalWaitTime uint64  `json:"total_wait_time"`
+	AvgWaitTime   float64 `json:"avg_wait_time"`
+	LastKick      string  `json:"last_kick"`
+	CreatedAt     string  `json:"created_at"`
+}
+
 type Watchdog struct {
 	Name    string
 	timer   *time.Timer
@@ -13,7 +24,7 @@ type Watchdog struct {
 	stopC   chan bool
 	doneC   chan bool // New channel to signal goroutine completion
 	expired bool
-	Stats   *Stats
+	Stats   *WatchdogStats
 }
 
 var watchdogs = map[string]*Watchdog{}
@@ -27,7 +38,7 @@ func newWatchdog(name string, expires time.Duration) (watchdog *Watchdog) {
 		waitC: make(chan bool),
 		stopC: make(chan bool),
 		doneC: make(chan bool),
-		Stats: &Stats{},
+		Stats: &WatchdogStats{CreatedAt: time.Now().Format(time.RFC3339)},
 	}
 
 	watchdogs[name] = watchdog
@@ -134,7 +145,7 @@ func (watchdog *Watchdog) GetStats() *Stats {
 	return nil
 }
 
-func getWatchdogStats(name string) (stats *Stats, err error) {
+func getWatchdogStats(name string) (stats *WatchdogStats, err error) {
 	watchdogsMutex.Lock()
 	defer watchdogsMutex.Unlock()
 

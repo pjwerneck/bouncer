@@ -1,6 +1,7 @@
 package bouncermain
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -143,18 +144,28 @@ func CounterDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.
 	DeleteHandler(w, r, ps, deleteCounter)
 }
 
-func CounterStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	ViewStats(w, r, ps, getCounterStats)
-}
+// CounterStatsHandler godoc
+// @Summary Get counter statistics
+// @Description Get current statistics for the counter
+// @Tags Counter
+// @Produce json
+// @Param name path string true "Counter name"
+// @Success 200 {object} CounterStats "Counter statistics"
+// @Failure 404 {string} Reply "Not Found - counter not found"
+// @Router /counter/{name}/stats [get]
+func CounterStatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	rep := newReply()
 
-func getCounterStats(name string) (*Stats, error) {
-	countersMutex.Lock()
-	defer countersMutex.Unlock()
-
-	counter, ok := counters[name]
-	if !ok {
-		return nil, ErrNotFound
+	stats, err := getCounterStats(ps[0].Value)
+	if err == nil {
+		buf, _ := json.Marshal(stats)
+		rep.Body = string(buf)
+		rep.Status = http.StatusOK
 	}
 
-	return counter.Stats, nil
+	if err == ErrNotFound {
+		rep.Status = http.StatusNotFound
+	}
+
+	rep.WriteResponse(w, r, err)
 }

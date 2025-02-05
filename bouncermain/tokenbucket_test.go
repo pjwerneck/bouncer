@@ -21,6 +21,8 @@ func TestGetTokensUntilEmpty(t *testing.T) {
 		n++
 	}
 	require.Equal(t, 100, n)
+
+	// check
 }
 
 func TestGetTokensUntilEmptyAndWaitForRefill(t *testing.T) {

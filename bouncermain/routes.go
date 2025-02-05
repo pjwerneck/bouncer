@@ -13,36 +13,32 @@ func Router() *httprouter.Router {
 		httpSwagger.URL("/docs/doc.json"), // The url pointing to API definition
 	))
 
-	r.GET("/tokenbucket/:name/acquire", TokenBucketAcquireHandler)
-	r.GET("/semaphore/:name/acquire", SemaphoreAcquireHandler)
-	r.GET("/semaphore/:name/release", SemaphoreReleaseHandler)
-	r.GET("/event/:name/wait", EventWaitHandler)
-	r.GET("/event/:name/send", EventSendHandler)
-	r.GET("/watchdog/:name/kick", WatchdogKickHandler)
-	r.GET("/watchdog/:name/wait", WatchdogWaitHandler)
-
-	r.GET("/tokenbucket/:name/stats", TokenBucketStats)
-	r.GET("/semaphore/:name/stats", SemaphoreStats)
-	r.GET("/event/:name/stats", EventStats)
-	r.GET("/watchdog/:name/stats", WatchdogStats)
-
+	r.DELETE("/barrier/:name", BarrierDeleteHandler)
+	r.DELETE("/counter/:name", CounterDeleteHandler)
+	r.DELETE("/event/:name", EventDeleteHandler)
+	r.DELETE("/semaphore/:name", SemaphoreDeleteHandler)
+	r.DELETE("/tokenbucket/:name", TokenBucketDeleteHandler)
+	r.DELETE("/watchdog/:name", WatchdogDeleteHandler)
+	r.GET("/.well-known/ready", WellKnownReady)
+	r.GET("/barrier/:name/stats", BarrierStatsHandler)
+	r.GET("/barrier/:name/wait", BarrierWaitHandler)
 	r.GET("/counter/:name/count", CounterCountHandler)
 	r.GET("/counter/:name/reset", CounterResetHandler)
+	r.GET("/counter/:name/stats", CounterStatsHandler)
 	r.GET("/counter/:name/value", CounterValueHandler)
-	r.GET("/counter/:name/stats", CounterStats)
-
-	r.GET("/barrier/:name/wait", BarrierWaitHandler)
-	r.GET("/barrier/:name/stats", BarrierStats)
-
-	r.GET("/.well-known/ready", WellKnownReady)
+	r.GET("/event/:name/send", EventSendHandler)
+	r.GET("/event/:name/stats", EventStatsHandler)
+	r.GET("/event/:name/wait", EventWaitHandler)
+	r.GET("/semaphore/:name/acquire", SemaphoreAcquireHandler)
+	r.GET("/semaphore/:name/release", SemaphoreReleaseHandler)
+	r.GET("/semaphore/:name/stats", SemaphoreStatsHandler)
+	r.GET("/tokenbucket/:name/acquire", TokenBucketAcquireHandler)
+	r.GET("/tokenbucket/:name/stats", TokenBucketStatsHandler)
+	r.GET("/watchdog/:name/kick", WatchdogKickHandler)
+	r.GET("/watchdog/:name/stats", WatchdogStatsHandler)
+	r.GET("/watchdog/:name/wait", WatchdogWaitHandler)
 
 	// Add DELETE endpoints
-	r.DELETE("/tokenbucket/:name", TokenBucketDeleteHandler)
-	r.DELETE("/semaphore/:name", SemaphoreDeleteHandler)
-	r.DELETE("/event/:name", EventDeleteHandler)
-	r.DELETE("/watchdog/:name", WatchdogDeleteHandler)
-	r.DELETE("/counter/:name", CounterDeleteHandler)
-	r.DELETE("/barrier/:name", BarrierDeleteHandler)
 
 	return r
 }

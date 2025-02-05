@@ -1,6 +1,7 @@
 package bouncermain
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"time"
@@ -117,6 +118,28 @@ func EventDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	DeleteHandler(w, r, ps, deleteEvent)
 }
 
-func EventStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	ViewStats(w, r, ps, getEventStats)
+// EventStatsHandler godoc
+// @Summary Get event statistics
+// @Description Get current statistics for the event
+// @Tags Event
+// @Produce json
+// @Param name path string true "Event name"
+// @Success 200 {object} EventStats "Event statistics"
+// @Failure 404 {string} Reply "Not Found - event not found"
+// @Router /event/{name}/stats [get]
+func EventStatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	rep := newReply()
+
+	stats, err := getEventStats(ps[0].Value)
+	if err == nil {
+		buf, _ := json.Marshal(stats)
+		rep.Body = string(buf)
+		rep.Status = http.StatusOK
+	}
+
+	if err == ErrNotFound {
+		rep.Status = http.StatusNotFound
+	}
+
+	rep.WriteResponse(w, r, err)
 }

@@ -6,11 +6,19 @@ import (
 	"time"
 )
 
+type TokenBucketStats struct {
+	Acquired      uint64  `json:"acquired"`
+	TotalWaitTime uint64  `json:"total_wait_time"`
+	AvgWaitTime   float64 `json:"average_wait_time"`
+	TimedOut      uint64  `json:"timed_out"`
+	CreatedAt     string  `json:"created_at"`
+}
+
 type TokenBucket struct {
 	Name     string
 	size     uint64        // private field
 	interval time.Duration // private field
-	Stats    *Stats
+	Stats    *TokenBucketStats
 	acquireC chan bool
 	timer    *time.Timer
 	mu       sync.RWMutex // protect size and interval
@@ -24,7 +32,7 @@ func newTokenBucket(name string, size uint64, interval time.Duration) (bucket *T
 		Name:     name,
 		size:     size,
 		interval: interval,
-		Stats:    &Stats{CreatedAt: time.Now().Format(time.RFC3339)},
+		Stats:    &TokenBucketStats{CreatedAt: time.Now().Format(time.RFC3339)},
 		acquireC: make(chan bool),
 		timer:    time.NewTimer(interval),
 	}
@@ -104,15 +112,23 @@ func (bucket *TokenBucket) Acquire(maxwait time.Duration, arrival time.Time) (er
 	wait := uint64(time.Since(arrival) / time.Millisecond)
 
 	atomic.AddUint64(&bucket.Stats.Acquired, 1)
-	atomic.AddUint64(&bucket.Stats.WaitTime, wait)
+	atomic.AddUint64(&bucket.Stats.TotalWaitTime, wait)
+
+	// Update average wait time
+	acquired := atomic.LoadUint64(&bucket.Stats.Acquired)
+	totalWait := atomic.LoadUint64(&bucket.Stats.TotalWaitTime)
+	if acquired > 0 {
+		bucket.Stats.AvgWaitTime = float64(totalWait) / float64(acquired)
+	}
+
 	return nil
 }
 
-func (bucket *TokenBucket) GetStats() *Stats {
+func (bucket *TokenBucket) GetStats() *TokenBucketStats {
 	return bucket.Stats
 }
 
-func getTokenBucketStats(name string) (stats *Stats, err error) {
+func getTokenBucketStats(name string) (stats *TokenBucketStats, err error) {
 	bucketsMutex.Lock()
 	defer bucketsMutex.Unlock()
 

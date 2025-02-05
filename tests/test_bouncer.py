@@ -158,7 +158,7 @@ def test_semaphore_size_1_and_5_clients(bouncer):
     stats = requests.get(f"{url}/stats").json()
     assert stats["acquired"] == 5
     assert stats["released"] == 5
-    assert stats["total_wait_time"] == 0
+    assert stats["total_wait_time"] > 0
 
 
 def test_semaphore_size_10_and_10_clients(bouncer):

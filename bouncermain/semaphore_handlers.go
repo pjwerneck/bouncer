@@ -1,6 +1,7 @@
 package bouncermain
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"time"
@@ -127,7 +128,28 @@ func SemaphoreDeleteHandler(w http.ResponseWriter, r *http.Request, ps httproute
 	DeleteHandler(w, r, ps, deleteSemaphore)
 }
 
-// TODO: semaphore stats should have max_ever_held, currently_held, and total_held_time
-func SemaphoreStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	ViewStats(w, r, ps, getSemaphoreStats)
+// SemaphoreStatsHandler godoc
+// @Summary Get semaphore statistics
+// @Description Get current statistics for the semaphore
+// @Tags Semaphore
+// @Produce json
+// @Param name path string true "Semaphore name"
+// @Success 200 {object} SemaphoreStats "Semaphore statistics"
+// @Failure 404 {string} Reply "Not Found - semaphore not found"
+// @Router /semaphore/{name}/stats [get]
+func SemaphoreStatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	rep := newReply()
+
+	stats, err := getSemaphoreStats(ps[0].Value)
+	if err == nil {
+		buf, _ := json.Marshal(stats)
+		rep.Body = string(buf)
+		rep.Status = http.StatusOK
+	}
+
+	if err == ErrNotFound {
+		rep.Status = http.StatusNotFound
+	}
+
+	rep.WriteResponse(w, r, err)
 }

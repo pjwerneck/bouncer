@@ -1,4 +1,103 @@
 basePath: /
+definitions:
+  bouncermain.BarrierStats:
+    properties:
+      avg_wait_time:
+        type: number
+      created_at:
+        type: string
+      size:
+        type: integer
+      timed_out:
+        type: integer
+      total_wait_time:
+        type: integer
+      total_waited:
+        type: integer
+      triggered:
+        type: integer
+      waiting:
+        type: integer
+    type: object
+  bouncermain.CounterStats:
+    properties:
+      created_at:
+        type: string
+      increments:
+        type: integer
+      resets:
+        type: integer
+      value:
+        type: integer
+    type: object
+  bouncermain.EventStats:
+    properties:
+      avg_wait_time:
+        type: number
+      created_at:
+        type: string
+      timed_out:
+        type: integer
+      total_wait_time:
+        type: integer
+      triggered:
+        type: integer
+      waited:
+        type: integer
+    type: object
+  bouncermain.SemaphoreStats:
+    properties:
+      acquired:
+        type: integer
+      average_wait_time:
+        type: number
+      created_at:
+        type: string
+      expired:
+        type: integer
+      max_ever_held:
+        type: integer
+      reacquired:
+        type: integer
+      released:
+        type: integer
+      timed_out:
+        type: integer
+      total_wait_time:
+        type: integer
+    type: object
+  bouncermain.TokenBucketStats:
+    properties:
+      acquired:
+        type: integer
+      average_wait_time:
+        type: number
+      created_at:
+        type: string
+      timed_out:
+        type: integer
+      total_wait_time:
+        type: integer
+    type: object
+  bouncermain.WatchdogStats:
+    properties:
+      avg_wait_time:
+        type: number
+      created_at:
+        type: string
+      kicks:
+        type: integer
+      last_kick:
+        type: string
+      timed_out:
+        type: integer
+      total_wait_time:
+        type: integer
+      triggered:
+        type: integer
+      waited:
+        type: integer
+    type: object
 host: localhost:5505
 info:
   contact: {}
@@ -40,6 +139,29 @@ paths:
           schema:
             type: string
       summary: Delete a barrier
+      tags:
+      - Barrier
+  /barrier/{name}/stats:
+    get:
+      description: Get current statistics for the barrier
+      parameters:
+      - description: Barrier name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Barrier statistics
+          schema:
+            $ref: '#/definitions/bouncermain.BarrierStats'
+        "404":
+          description: Not Found - barrier not found
+          schema:
+            type: string
+      summary: Get barrier statistics
       tags:
       - Barrier
   /barrier/{name}/wait:
@@ -170,6 +292,29 @@ paths:
       summary: Reset counter value
       tags:
       - Counter
+  /counter/{name}/stats:
+    get:
+      description: Get current statistics for the counter
+      parameters:
+      - description: Counter name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Counter statistics
+          schema:
+            $ref: '#/definitions/bouncermain.CounterStats'
+        "404":
+          description: Not Found - counter not found
+          schema:
+            type: string
+      summary: Get counter statistics
+      tags:
+      - Counter
   /counter/{name}/value:
     get:
       description: '- Returns current counter value'
@@ -244,6 +389,29 @@ paths:
           schema:
             type: string
       summary: Send an event
+      tags:
+      - Event
+  /event/{name}/stats:
+    get:
+      description: Get current statistics for the event
+      parameters:
+      - description: Event name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Event statistics
+          schema:
+            $ref: '#/definitions/bouncermain.EventStats'
+        "404":
+          description: Not Found - event not found
+          schema:
+            type: string
+      summary: Get event statistics
       tags:
       - Event
   /event/{name}/wait:
@@ -396,6 +564,29 @@ paths:
       summary: Release a semaphore
       tags:
       - Semaphore
+  /semaphore/{name}/stats:
+    get:
+      description: Get current statistics for the semaphore
+      parameters:
+      - description: Semaphore name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Semaphore statistics
+          schema:
+            $ref: '#/definitions/bouncermain.SemaphoreStats'
+        "404":
+          description: Not Found - semaphore not found
+          schema:
+            type: string
+      summary: Get semaphore statistics
+      tags:
+      - Semaphore
   /tokenbucket/{name}:
     delete:
       description: Remove a token bucket
@@ -468,6 +659,35 @@ paths:
       summary: Acquire a token from a token bucket
       tags:
       - TokenBucket
+  /tokenbucket/{name}/stats:
+    get:
+      description: Get token bucket statistics
+      parameters:
+      - description: Token bucket name
+        in: path
+        name: name
+        required: true
+        type: string
+      - description: Token bucket statistics
+        in: body
+        name: name
+        required: true
+        schema:
+          $ref: '#/definitions/bouncermain.TokenBucketStats'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token bucket statistics
+          schema:
+            $ref: '#/definitions/bouncermain.TokenBucketStats'
+        "404":
+          description: Not Found - token bucket not found
+          schema:
+            type: string
+      summary: View token bucket stats
+      tags:
+      - TokenBucket
   /watchdog/{name}:
     delete:
       description: Remove a watchdog
@@ -520,6 +740,29 @@ paths:
           schema:
             type: string
       summary: Reset watchdog timer
+      tags:
+      - Watchdog
+  /watchdog/{name}/stats:
+    get:
+      description: Get current statistics for the watchdog
+      parameters:
+      - description: Watchdog name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Watchdog statistics
+          schema:
+            $ref: '#/definitions/bouncermain.WatchdogStats'
+        "404":
+          description: Not Found - watchdog not found
+          schema:
+            type: string
+      summary: Get watchdog statistics
       tags:
       - Watchdog
   /watchdog/{name}/wait:

@@ -62,6 +62,41 @@
                 }
             }
         },
+        "/barrier/{name}/stats": {
+            "get": {
+                "description": "Get current statistics for the barrier",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Barrier"
+                ],
+                "summary": "Get barrier statistics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Barrier name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Barrier statistics",
+                        "schema": {
+                            "$ref": "#/definitions/bouncermain.BarrierStats"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - barrier not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/barrier/{name}/wait": {
             "get": {
                 "description": "- Wait until `size` parties have arrived or until `maxwait` milliseconds have passed.\n- Returns `409 Conflict` immediately if `size` parties have already arrived.\n- If `maxwait` is negative, waits indefinitely.\n- If `maxwait` is 0, returns immediately.",
@@ -239,6 +274,41 @@
                 }
             }
         },
+        "/counter/{name}/stats": {
+            "get": {
+                "description": "Get current statistics for the counter",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Counter"
+                ],
+                "summary": "Get counter statistics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Counter name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Counter statistics",
+                        "schema": {
+                            "$ref": "#/definitions/bouncermain.CounterStats"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - counter not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/counter/{name}/value": {
             "get": {
                 "description": "- Returns current counter value",
@@ -343,6 +413,41 @@
                     },
                     "409": {
                         "description": "Conflict - event already sent",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/event/{name}/stats": {
+            "get": {
+                "description": "Get current statistics for the event",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Event"
+                ],
+                "summary": "Get event statistics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Event name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Event statistics",
+                        "schema": {
+                            "$ref": "#/definitions/bouncermain.EventStats"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - event not found",
                         "schema": {
                             "type": "string"
                         }
@@ -555,6 +660,41 @@
                 }
             }
         },
+        "/semaphore/{name}/stats": {
+            "get": {
+                "description": "Get current statistics for the semaphore",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Semaphore"
+                ],
+                "summary": "Get semaphore statistics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Semaphore name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Semaphore statistics",
+                        "schema": {
+                            "$ref": "#/definitions/bouncermain.SemaphoreStats"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - semaphore not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/tokenbucket/{name}": {
             "delete": {
                 "description": "Remove a token bucket",
@@ -655,6 +795,50 @@
                 }
             }
         },
+        "/tokenbucket/{name}/stats": {
+            "get": {
+                "description": "Get token bucket statistics",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "TokenBucket"
+                ],
+                "summary": "View token bucket stats",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Token bucket name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Token bucket statistics",
+                        "name": "name",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/bouncermain.TokenBucketStats"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Token bucket statistics",
+                        "schema": {
+                            "$ref": "#/definitions/bouncermain.TokenBucketStats"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - token bucket not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/watchdog/{name}": {
             "delete": {
                 "description": "Remove a watchdog",
@@ -732,6 +916,41 @@
                 }
             }
         },
+        "/watchdog/{name}/stats": {
+            "get": {
+                "description": "Get current statistics for the watchdog",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watchdog"
+                ],
+                "summary": "Get watchdog statistics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Watchdog name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Watchdog statistics",
+                        "schema": {
+                            "$ref": "#/definitions/bouncermain.WatchdogStats"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - watchdog not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/watchdog/{name}/wait": {
             "get": {
                 "description": "- Wait for a watchdog to expire or until `maxwait` milliseconds have passed\n- Each `kick` request resets the watchdog expiration timer.\n- Return immediately if the watchdog has already expired\n- If `maxwait` is negative, waits indefinitely.\n- If `maxwait` is 0, returns immediately.",
@@ -780,6 +999,158 @@
                             "type": "string"
                         }
                     }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "bouncermain.BarrierStats": {
+            "type": "object",
+            "properties": {
+                "avg_wait_time": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "size": {
+                    "type": "integer"
+                },
+                "timed_out": {
+                    "type": "integer"
+                },
+                "total_wait_time": {
+                    "type": "integer"
+                },
+                "total_waited": {
+                    "type": "integer"
+                },
+                "triggered": {
+                    "type": "integer"
+                },
+                "waiting": {
+                    "type": "integer"
+                }
+            }
+        },
+        "bouncermain.CounterStats": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "increments": {
+                    "type": "integer"
+                },
+                "resets": {
+                    "type": "integer"
+                },
+                "value": {
+                    "type": "integer"
+                }
+            }
+        },
+        "bouncermain.EventStats": {
+            "type": "object",
+            "properties": {
+                "avg_wait_time": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "timed_out": {
+                    "type": "integer"
+                },
+                "total_wait_time": {
+                    "type": "integer"
+                },
+                "triggered": {
+                    "type": "integer"
+                },
+                "waited": {
+                    "type": "integer"
+                }
+            }
+        },
+        "bouncermain.SemaphoreStats": {
+            "type": "object",
+            "properties": {
+                "acquired": {
+                    "type": "integer"
+                },
+                "average_wait_time": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "expired": {
+                    "type": "integer"
+                },
+                "max_ever_held": {
+                    "type": "integer"
+                },
+                "reacquired": {
+                    "type": "integer"
+                },
+                "released": {
+                    "type": "integer"
+                },
+                "timed_out": {
+                    "type": "integer"
+                },
+                "total_wait_time": {
+                    "type": "integer"
+                }
+            }
+        },
+        "bouncermain.TokenBucketStats": {
+            "type": "object",
+            "properties": {
+                "acquired": {
+                    "type": "integer"
+                },
+                "average_wait_time": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "timed_out": {
+                    "type": "integer"
+                },
+                "total_wait_time": {
+                    "type": "integer"
+                }
+            }
+        },
+        "bouncermain.WatchdogStats": {
+            "type": "object",
+            "properties": {
+                "avg_wait_time": {
+                    "type": "number"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "kicks": {
+                    "type": "integer"
+                },
+                "last_kick": {
+                    "type": "string"
+                },
+                "timed_out": {
+                    "type": "integer"
+                },
+                "total_wait_time": {
+                    "type": "integer"
+                },
+                "triggered": {
+                    "type": "integer"
+                },
+                "waited": {
+                    "type": "integer"
                 }
             }
         }

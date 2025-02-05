@@ -2,15 +2,25 @@ package bouncermain
 
 import (
 	"sync"
+	"sync/atomic"
 	"time"
 )
+
+type EventStats struct {
+	Waited        uint64  `json:"waited"`
+	TimedOut      uint64  `json:"timed_out"`
+	Triggered     uint64  `json:"triggered"`
+	TotalWaitTime uint64  `json:"total_wait_time"`
+	AvgWaitTime   float64 `json:"avg_wait_time"`
+	CreatedAt     string  `json:"created_at"`
+}
 
 type Event struct {
 	Name     string
 	acquireC chan bool
 	sendL    *sync.Mutex
 	closed   bool
-	Stats    *Stats
+	Stats    *EventStats
 }
 
 var events = map[string]*Event{}
@@ -21,6 +31,7 @@ func newEvent(name string) (event *Event) {
 		Name:     name,
 		acquireC: make(chan bool, 1),
 		sendL:    &sync.Mutex{},
+		Stats:    &EventStats{CreatedAt: time.Now().Format(time.RFC3339)},
 	}
 
 	events[name] = event
@@ -42,8 +53,26 @@ func getEvent(name string) (event *Event, err error) {
 }
 
 func (event *Event) Wait(maxwait time.Duration) (err error) {
+	started := time.Now()
 	_, err = RecvTimeout(event.acquireC, maxwait)
-	return err
+
+	if err != nil {
+		atomic.AddUint64(&event.Stats.TimedOut, 1)
+		return err
+	}
+
+	wait := uint64(time.Since(started) / time.Millisecond)
+	atomic.AddUint64(&event.Stats.Waited, 1)
+	atomic.AddUint64(&event.Stats.TotalWaitTime, wait)
+
+	// Update average wait time
+	waited := atomic.LoadUint64(&event.Stats.Waited)
+	totalWait := atomic.LoadUint64(&event.Stats.TotalWaitTime)
+	if waited > 0 {
+		event.Stats.AvgWaitTime = float64(totalWait) / float64(waited)
+	}
+
+	return nil
 }
 
 func (event *Event) Send() (err error) {
@@ -57,6 +86,7 @@ func (event *Event) Send() (err error) {
 		event.closed = true
 	}
 
+	atomic.AddUint64(&event.Stats.Triggered, 1)
 	return nil
 }
 
@@ -64,7 +94,7 @@ func (event *Event) GetStats() *Stats {
 	return nil
 }
 
-func getEventStats(name string) (stats *Stats, err error) {
+func getEventStats(name string) (stats *EventStats, err error) {
 	eventsMutex.Lock()
 	defer eventsMutex.Unlock()
 

@@ -1,6 +1,7 @@
 package bouncermain
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"time"
@@ -118,6 +119,28 @@ func WatchdogDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter
 	DeleteHandler(w, r, ps, deleteWatchdog)
 }
 
-func WatchdogStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	ViewStats(w, r, ps, getWatchdogStats)
+// WatchdogStatsHandler godoc
+// @Summary Get watchdog statistics
+// @Description Get current statistics for the watchdog
+// @Tags Watchdog
+// @Produce json
+// @Param name path string true "Watchdog name"
+// @Success 200 {object} WatchdogStats "Watchdog statistics"
+// @Failure 404 {string} Reply "Not Found - watchdog not found"
+// @Router /watchdog/{name}/stats [get]
+func WatchdogStatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	rep := newReply()
+
+	stats, err := getWatchdogStats(ps[0].Value)
+	if err == nil {
+		buf, _ := json.Marshal(stats)
+		rep.Body = string(buf)
+		rep.Status = http.StatusOK
+	}
+
+	if err == ErrNotFound {
+		rep.Status = http.StatusNotFound
+	}
+
+	rep.WriteResponse(w, r, err)
 }

@@ -1,6 +1,7 @@
 package bouncermain
 
 import (
+	"encoding/json"
 	"net/http"
 	"net/url"
 	"time"
@@ -72,17 +73,28 @@ func BarrierDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.
 	DeleteHandler(w, r, ps, deleteBarrier)
 }
 
-func BarrierStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	ViewStats(w, r, ps, getBarrierStats)
-}
+// BarrierStatsHandler godoc
+// @Summary Get barrier statistics
+// @Description Get current statistics for the barrier
+// @Tags Barrier
+// @Produce json
+// @Param name path string true "Barrier name"
+// @Success 200 {object} BarrierStats "Barrier statistics"
+// @Failure 404 {string} Reply "Not Found - barrier not found"
+// @Router /barrier/{name}/stats [get]
+func BarrierStatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	rep := newReply()
 
-func getBarrierStats(name string) (*Stats, error) {
-	barriersMutex.Lock()
-	defer barriersMutex.Unlock()
-
-	barrier, ok := barriers[name]
-	if !ok {
-		return nil, ErrNotFound
+	stats, err := getBarrierStats(ps[0].Value)
+	if err == nil {
+		buf, _ := json.Marshal(stats)
+		rep.Body = string(buf)
+		rep.Status = http.StatusOK
 	}
-	return barrier.Stats, nil
+
+	if err == ErrNotFound {
+		rep.Status = http.StatusNotFound
+	}
+
+	rep.WriteResponse(w, r, err)
 }

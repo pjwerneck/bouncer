@@ -8,6 +8,18 @@ import (
 	"github.com/gofrs/uuid"
 )
 
+type SemaphoreStats struct {
+	Acquired      uint64  `json:"acquired"`
+	Reacquired    uint64  `json:"reacquired"`
+	Released      uint64  `json:"released"`
+	Expired       uint64  `json:"expired"`
+	TotalWaitTime uint64  `json:"total_wait_time"`
+	AvgWaitTime   float64 `json:"average_wait_time"`
+	TimedOut      uint64  `json:"timed_out"`
+	MaxEverHeld   uint64  `json:"max_ever_held"`
+	CreatedAt     string  `json:"created_at"`
+}
+
 type Semaphore struct {
 	Name     string
 	Size     uint64
@@ -15,7 +27,7 @@ type Semaphore struct {
 	acquireC chan bool
 	timers   map[string]*time.Timer
 	mu       *sync.Mutex
-	Stats    *Stats
+	Stats    *SemaphoreStats
 }
 
 var semaphores = map[string]*Semaphore{}
@@ -29,7 +41,7 @@ func newSemaphore(name string, size uint64) (semaphore *Semaphore) {
 		acquireC: make(chan bool, size),
 		timers:   make(map[string]*time.Timer),
 		mu:       &sync.Mutex{},
-		Stats:    &Stats{CreatedAt: time.Now().Format(time.RFC3339)},
+		Stats:    &SemaphoreStats{CreatedAt: time.Now().Format(time.RFC3339)},
 	}
 
 	semaphores[name] = semaphore
@@ -122,6 +134,25 @@ func (semaphore *Semaphore) Acquire(maxwait time.Duration, expires time.Duration
 		if semaphore.setKey(key, expires) {
 			token = key
 			atomic.AddUint64(&semaphore.Stats.Acquired, 1)
+			wait := uint64(time.Since(started) / time.Millisecond)
+			atomic.AddUint64(&semaphore.Stats.TotalWaitTime, wait)
+
+			// Update average wait time
+			acquired := atomic.LoadUint64(&semaphore.Stats.Acquired)
+			totalWait := atomic.LoadUint64(&semaphore.Stats.TotalWaitTime)
+			if acquired > 0 {
+				semaphore.Stats.AvgWaitTime = float64(totalWait) / float64(acquired)
+			}
+
+			// Update max ever held
+			current := uint64(len(semaphore.Keys))
+			for {
+				max := atomic.LoadUint64(&semaphore.Stats.MaxEverHeld)
+				if current <= max || atomic.CompareAndSwapUint64(&semaphore.Stats.MaxEverHeld, max, current) {
+					break
+				}
+			}
+
 			break
 		}
 
@@ -151,11 +182,11 @@ func (semaphore *Semaphore) Release(key string) error {
 	return err
 }
 
-func (semaphore *Semaphore) GetStats() *Stats {
+func (semaphore *Semaphore) GetStats() *SemaphoreStats {
 	return semaphore.Stats
 }
 
-func getSemaphoreStats(name string) (stats *Stats, err error) {
+func getSemaphoreStats(name string) (stats *SemaphoreStats, err error) {
 	semaphoresMutex.Lock()
 	defer semaphoresMutex.Unlock()
 
