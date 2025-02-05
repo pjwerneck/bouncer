@@ -43,14 +43,19 @@ func TestBarrierSuccess(t *testing.T) {
 		successCount++
 	}
 	require.Equal(t, 3, successCount)
+
+	// Additional request should fail with conflict
+	status, _, err := GetRequest(url)
+	require.Nil(t, err)
+	require.Equal(t, 409, status)
 }
 
 func TestBarrierReuse(t *testing.T) {
-	url := fmt.Sprintf("%s/barrier/reuse-test/wait?size=5", server.URL)
+	url := fmt.Sprintf("%s/barrier/reuse-test/wait?size=3", server.URL)
 
 	// First round
 	var wg sync.WaitGroup
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 3; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -61,8 +66,13 @@ func TestBarrierReuse(t *testing.T) {
 	}
 	wg.Wait()
 
-	// Second round - barrier should be reusable
-	for i := 0; i < 5; i++ {
+	// Delete the barrier
+	status, _, err := DeleteRequest(fmt.Sprintf("%s/barrier/reuse-test", server.URL))
+	require.Nil(t, err)
+	require.Equal(t, 204, status)
+
+	// Second round should work after recreation
+	for i := 0; i < 3; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()

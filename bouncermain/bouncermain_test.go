@@ -41,6 +41,29 @@ func GetRequest(url string) (status int, body string, err error) {
 	return
 }
 
+func DeleteRequest(url string) (status int, body string, err error) {
+	req, err := http.NewRequest("DELETE", url, nil)
+	if err != nil {
+		return
+	}
+
+	rep, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return
+	}
+	defer rep.Body.Close() // Add this line to properly close the response body
+
+	bs, err := io.ReadAll(rep.Body)
+	if err != nil {
+		return
+	}
+
+	body = string(bs)
+	status = rep.StatusCode
+
+	return
+}
+
 func TestStatsEndpoints(t *testing.T) {
 	// Create and use a token bucket
 	tbURL := fmt.Sprintf("%s/tokenbucket/stats-test/acquire?size=10", server.URL)

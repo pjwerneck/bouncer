@@ -413,12 +413,9 @@ def test_barrier_success(bouncer):
     for client in clients:
         assert end - start == pytest.approx(0, abs=0.1)
 
-    # barrier is fully reusable afterwards
-    with multiprocessing.Pool(10) as pool:
-        results = pool.map(barrier_worker, [f"{url}/wait?size=10"] * 10)
-
-    # all clients should get 204
-    assert all(status == 204 for status, _ in results)
+    # barrier is not reusable afterwards
+    response = requests.get(f"{url}/wait?size=10")
+    assert response.status_code == 409
 
 
 def test_error_cases(bouncer):

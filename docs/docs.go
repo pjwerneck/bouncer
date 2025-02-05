@@ -70,7 +70,7 @@ const docTemplate = `{
         },
         "/barrier/{name}/wait": {
             "get": {
-                "description": "Wait until ` + "`" + `size` + "`" + ` parties have arrived at the barrier, or until ` + "`" + `maxwait` + "`" + ` milliseconds have passed.",
+                "description": "- Wait until ` + "`" + `size` + "`" + ` parties have arrived or until ` + "`" + `maxwait` + "`" + ` milliseconds have passed.\n- Returns ` + "`" + `409 Conflict` + "`" + ` immediately if ` + "`" + `size` + "`" + ` parties have already arrived.\n- If ` + "`" + `maxwait` + "`" + ` is negative, waits indefinitely.\n- If ` + "`" + `maxwait` + "`" + ` is 0, returns immediately.",
                 "produces": [
                     "text/plain"
                 ],
@@ -107,6 +107,12 @@ const docTemplate = `{
                     },
                     "408": {
                         "description": "Request Timeout - maxwait exceeded",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict - barrier already completed",
                         "schema": {
                             "type": "string"
                         }

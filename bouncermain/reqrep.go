@@ -22,7 +22,7 @@ func (rep *Reply) WriteResponse(w http.ResponseWriter, r *http.Request, err erro
 		switch err {
 		case ErrTimedOut:
 			rep.Status = http.StatusRequestTimeout
-		case ErrKeyError:
+		case ErrKeyError, ErrBarrierClosed:
 			rep.Status = http.StatusConflict
 		default:
 			rep.Status = http.StatusBadRequest
