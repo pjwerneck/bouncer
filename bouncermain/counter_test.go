@@ -103,20 +103,3 @@ func TestCounterResetWithValue(t *testing.T) {
 	require.Equal(t, 200, status)
 	require.Equal(t, "10", body)
 }
-
-func TestCounterStats(t *testing.T) {
-	baseURL := fmt.Sprintf("%s/counter/stats-test", server.URL)
-
-	// Do some operations
-	GetRequest(fmt.Sprintf("%s/count", baseURL))
-	GetRequest(fmt.Sprintf("%s/count", baseURL))
-	GetRequest(fmt.Sprintf("%s/reset", baseURL))
-	GetRequest(fmt.Sprintf("%s/count", baseURL))
-
-	// Check stats
-	status, body, err := GetRequest(fmt.Sprintf("%s/stats", baseURL))
-	require.Nil(t, err)
-	require.Equal(t, 200, status)
-	require.Contains(t, body, "acquired")
-	require.Contains(t, body, "released")
-}

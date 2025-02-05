@@ -141,10 +141,6 @@ func (watchdog *Watchdog) Wait(maxwait time.Duration) error {
 	return ErrTimedOut
 }
 
-func (watchdog *Watchdog) GetStats() *Stats {
-	return nil
-}
-
 func getWatchdogStats(name string) (stats *WatchdogStats, err error) {
 	watchdogsMutex.Lock()
 	defer watchdogsMutex.Unlock()

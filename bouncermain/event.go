@@ -90,10 +90,6 @@ func (event *Event) Send() (err error) {
 	return nil
 }
 
-func (event *Event) GetStats() *Stats {
-	return nil
-}
-
 func getEventStats(name string) (stats *EventStats, err error) {
 	eventsMutex.Lock()
 	defer eventsMutex.Unlock()

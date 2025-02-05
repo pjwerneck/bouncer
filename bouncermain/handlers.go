@@ -27,27 +27,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"encoding/json"
-
 	"github.com/julienschmidt/httprouter"
 )
-
-func ViewStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params, f statsFunc) {
-	rep := newReply()
-
-	stats, err := f(ps[0].Value)
-	if err == nil {
-		buf, _ := json.Marshal(stats)
-		rep.Body = string(buf)
-		rep.Status = http.StatusOK
-	}
-
-	if err == ErrNotFound {
-		rep.Status = http.StatusNotFound
-	}
-
-	rep.WriteResponse(w, r, err)
-}
 
 // Common delete handler function type
 type deleteFunc func(string) error
