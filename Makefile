@@ -17,14 +17,16 @@ LDFLAGS=-ldflags "-w -s -X main.version=$(VERSION) -X main.commit=$(shell git re
 
 all: clean build test docs docker
 
-build:
+# Change build target to depend on docs
+build: docs
 	$(GOBUILD) $(LDFLAGS) -o $(APP_NAME)
 
 test:
 	$(GOTEST) -v -race ./...
 
+# Add swag init command to docs target
 docs:
-	swag init -g bouncermain/handlers.go
+	swag init -g bouncermain/handlers.go --output docs
 
 docker:
 	docker build -t $(DOCKER_REPO):$(DOCKER_TAG) .

@@ -12,9 +12,9 @@ type Request struct {
 	Key      string        `schema:"key"`
 	MaxWait  time.Duration `schema:"maxwait"`
 	Size     uint64        `schema:"size"`
+	Amount   int64         `schema:"amount"` // Add schema tag
+	Value    int64         `schema:"value"`  // Add schema tag
 	Arrival  time.Time     `schema:"-"`
-	Amount   int64         `schema:"-"`
-	Value    int64         `schema:"-"`
 }
 
 type Reply struct {
@@ -28,9 +28,9 @@ func newRequest() Request {
 		Interval: time.Duration(1) * time.Second,
 		MaxWait:  time.Duration(-1),
 		Size:     1,
-		Arrival:  time.Now(),
 		Amount:   1,
 		Value:    0,
+		Arrival:  time.Now(),
 	}
 }
 

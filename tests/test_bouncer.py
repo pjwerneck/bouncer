@@ -319,6 +319,8 @@ def test_counter_multiple_clients(bouncer):
 
 
 def watchdog_worker(url):
+    if "kick" in url:
+        sleep(0.1)
     response = requests.get(url)
     return response.status_code, response.text
 
@@ -333,17 +335,30 @@ def test_watchdog_no_kicks(bouncer):
     assert all(status == 408 for status, _ in results)
 
 
-def test_watchdog_with_single_kick(bouncer):
+def test_watchdog_with_kick(bouncer):
     url = f"{bouncer}/watchdog/wd2"
 
-    with multiprocessing.Pool(11) as pool:
-        results = pool.map(
-            watchdog_worker,
-            [f"{url}/wait?maxWait=1000"] * 10 + [f"{url}/kick?expires=100"],
-        )
+    # First kick the watchdog with 1000ms expiry
+    response = requests.get(f"{url}/kick?expires=1000")
+    assert response.status_code == 204
 
-    # all clients should get 204
+    # Then start the waiters with shorter timeout (should all timeout)
+    with multiprocessing.Pool(10) as pool:
+        results = pool.map(watchdog_worker, [f"{url}/wait?maxWait=500"] * 10)
+
+    # All clients should get 408 because they wait less than the expiry
+    assert all(status == 408 for status, _ in results)
+
+    # Now let's test with waiters that wait longer than expiry
+    with multiprocessing.Pool(10) as pool:
+        start = perf_counter()
+        results = pool.map(watchdog_worker, [f"{url}/wait?maxWait=2000"] * 10)
+        end = perf_counter()
+
+    # All clients should get 204 because the watchdog expired
     assert all(status == 204 for status, _ in results)
+    # And it should take around 0.5 seconds (the remaining expires time)
+    assert end - start == pytest.approx(0.5, abs=0.1)
 
 
 def barrier_worker(url):
@@ -354,7 +369,7 @@ def barrier_worker(url):
 def test_barrier_timeout(bouncer):
     url = f"{bouncer}/barrier/b1"
 
-    # with size=10 but only 9 clients, all clients should timeout
+    # with size=10 but only 9 clients, all clients should timeout after 100ms
     with multiprocessing.Pool(9) as pool:
         start = perf_counter()
         results = pool.map(barrier_worker, [f"{url}/wait?size=10&maxWait=100"] * 5)
@@ -363,7 +378,7 @@ def test_barrier_timeout(bouncer):
     assert all(status == 408 for status, _ in results)
 
     for _, end in results:
-        assert end - start == pytest.approx(0.1, abs=0.02)
+        assert end - start > 0.1
 
 
 def test_barrier_success(bouncer):

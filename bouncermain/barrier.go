@@ -12,11 +12,17 @@ import (
 type Barrier struct {
 	Name       string
 	Size       uint64
+	mu         *sync.RWMutex
 	waiting    int64
 	generation int64
-	mu         *sync.Mutex
-	waitC      chan bool
+	current    waitGroup
 	Stats      *Metrics
+}
+
+type waitGroup struct {
+	waitC chan bool
+	doneC chan bool
+	gen   int64
 }
 
 var barriers = map[string]*Barrier{}
@@ -26,9 +32,13 @@ func newBarrier(name string, size uint64) *Barrier {
 	barrier := &Barrier{
 		Name:  name,
 		Size:  size,
-		mu:    &sync.Mutex{},
-		waitC: make(chan bool),
+		mu:    &sync.RWMutex{},
 		Stats: &Metrics{},
+		current: waitGroup{
+			waitC: make(chan bool),
+			doneC: make(chan bool),
+			gen:   0,
+		},
 	}
 	barriers[name] = barrier
 	return barrier
@@ -47,52 +57,56 @@ func getBarrier(name string, size uint64) (*Barrier, error) {
 }
 
 func (b *Barrier) Wait(maxwait time.Duration) error {
-	gen := atomic.LoadInt64(&b.generation)
+	b.mu.Lock()
 	count := atomic.AddInt64(&b.waiting, 1)
+	currentGroup := b.current
+	b.mu.Unlock()
 
 	if count == int64(b.Size) {
-		// Last one in triggers the barrier
-		atomic.AddInt64(&b.generation, 1)
-		close(b.waitC)
 		b.mu.Lock()
-		b.waitC = make(chan bool)
-		atomic.StoreInt64(&b.waiting, 0)
+		if atomic.LoadInt64(&b.waiting) == int64(b.Size) {
+			atomic.StoreInt64(&b.waiting, 0)
+			close(currentGroup.waitC)
+			close(currentGroup.doneC)
+			b.current = waitGroup{
+				waitC: make(chan bool),
+				doneC: make(chan bool),
+				gen:   currentGroup.gen + 1,
+			}
+		}
 		b.mu.Unlock()
 		return nil
 	}
 
-	// Handle different maxwait values
 	switch {
 	case maxwait < 0:
-		// Wait forever
-		<-b.waitC
-		if atomic.LoadInt64(&b.generation) > gen {
+		select {
+		case <-currentGroup.waitC:
+			return nil
+		case <-currentGroup.doneC:
 			return nil
 		}
-		return ErrTimedOut
 
 	case maxwait == 0:
-		// Return immediately
 		select {
-		case <-b.waitC:
-			if atomic.LoadInt64(&b.generation) > gen {
-				return nil
-			}
-			return ErrTimedOut
+		case <-currentGroup.waitC:
+			return nil
+		case <-currentGroup.doneC:
+			return nil
 		default:
 			atomic.AddInt64(&b.waiting, -1)
 			return ErrTimedOut
 		}
 
 	default:
-		// Wait with timeout
+		timer := time.NewTimer(maxwait)
+		defer timer.Stop()
 		select {
-		case <-b.waitC:
-			if atomic.LoadInt64(&b.generation) > gen {
-				return nil
-			}
-			return ErrTimedOut
-		case <-time.After(maxwait):
+		case <-currentGroup.waitC:
+			return nil
+		case <-currentGroup.doneC:
+			return nil
+		case <-timer.C:
 			atomic.AddInt64(&b.waiting, -1)
 			return ErrTimedOut
 		}

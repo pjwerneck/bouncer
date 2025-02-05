@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/pjwerneck/bouncer/bouncermain"
-	_ "github.com/pjwerneck/bouncer/docs"
+	_ "github.com/pjwerneck/bouncer/docs" // swagger docs
 
 	"flag"
 	"log"
