@@ -1,13 +1,11 @@
 package bouncermain
 
 import (
-	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"github.com/gofrs/uuid"
-	"github.com/julienschmidt/httprouter"
 )
 
 type Semaphore struct {
@@ -167,80 +165,4 @@ func getSemaphoreStats(name string) (stats *Metrics, err error) {
 	}
 
 	return semaphore.Stats, nil
-}
-
-// SemaphoreAcquireHandler godoc
-// @Summary Acquire a semaphore
-// @Description Acquire a semaphore lock.
-// @Tags Semaphore
-// @Produce plain
-// @Param name path string true "Semaphore name"
-// @Param size query int false "Semaphore size" default(1)
-// @Param maxWait query int false "Maximum wait time" default(-1)
-// @Param expires query int false "Expiration time" default(60000)
-// @Success 200 {string} Reply "The semaphore release key"
-// @Failure 400 {string} Reply "Bad Request - invalid parameters"
-// @Failure 404 {string} Reply "Not Found - semaphore not found
-// @Failure 408 {string} Reply "Request Timeout - `maxWait` exceeded"
-// @Router /semaphore/{name}/acquire [get]
-func SemaphoreAcquireHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	var err error
-	var semaphore *Semaphore
-
-	req := newRequest()
-	rep := newReply()
-
-	err = req.Decode(r.URL.Query())
-	if err == nil {
-		logger.Debugf("semaphore.acquire: %+v", req)
-		semaphore, err = getSemaphore(ps[0].Value, req.Size)
-	}
-
-	if err == nil {
-		rep.Body, err = semaphore.Acquire(req.MaxWait, req.Expires, req.Key)
-		rep.Status = http.StatusOK
-	}
-
-	rep.WriteResponse(w, r, err)
-}
-
-// SemaphoreReleaseHandler godoc
-// @Summary Release a semaphore
-// @Description Release a semaphore lock
-// @Tags Semaphore
-// @Produce plain
-// @Param name path string true "Semaphore name"
-// @Param size query int false "Semaphore size" default(1)
-// @Param key query string true "Release key"
-// @Success 204 "Semaphore released successfully"
-// @Failure 400 {string} Reply "Bad Request - invalid parameters"
-// @Failure 404 {string} Reply "Not Found - semaphore not found
-// @Failure 409 {string} Reply "Conflict - key is invalid or already released"
-// @Router /semaphore/{name}/release [get]
-func SemaphoreReleaseHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	var err error
-	var semaphore *Semaphore
-
-	req := newRequest()
-	rep := newReply()
-
-	err = req.Decode(r.URL.Query())
-	if err == nil {
-		logger.Debugf("semaphore.release: %+v", req)
-		semaphore, err = getSemaphore(ps[0].Value, req.Size)
-	}
-
-	if err == nil {
-		err = semaphore.Release(req.Key)
-		rep.Status = http.StatusNoContent
-
-		logger.Debugf("semaphore.keys: %+v", semaphore.Keys)
-	}
-
-	rep.WriteResponse(w, r, err)
-}
-
-// TODO: semaphore stats should have max_ever_held, currently_held, and total_held_time
-func SemaphoreStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	ViewStats(w, r, ps, getSemaphoreStats)
 }

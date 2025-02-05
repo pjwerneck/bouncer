@@ -65,7 +65,7 @@ const docTemplate = `{
                         "type": "integer",
                         "default": -1,
                         "description": "Maximum wait time",
-                        "name": "maxWait",
+                        "name": "maxwait",
                         "in": "query"
                     }
                 ],
@@ -246,7 +246,7 @@ const docTemplate = `{
                         "type": "integer",
                         "default": -1,
                         "description": "Maximum wait time",
-                        "name": "maxWait",
+                        "name": "maxwait",
                         "in": "query"
                     }
                 ],
@@ -307,7 +307,7 @@ const docTemplate = `{
                         "type": "integer",
                         "default": -1,
                         "description": "Maximum wait time",
-                        "name": "maxWait",
+                        "name": "maxwait",
                         "in": "query"
                     },
                     {
@@ -440,7 +440,7 @@ const docTemplate = `{
                         "type": "integer",
                         "default": -1,
                         "description": "Maximum wait time",
-                        "name": "maxWait",
+                        "name": "maxwait",
                         "in": "query"
                     }
                 ],
@@ -539,7 +539,7 @@ const docTemplate = `{
                         "type": "integer",
                         "default": -1,
                         "description": "Maximum time to wait",
-                        "name": "maxWait",
+                        "name": "maxwait",
                         "in": "query"
                     }
                 ],

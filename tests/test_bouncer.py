@@ -64,7 +64,7 @@ def tokenbucket_worker(url):
 
 def test_tokenbucket(bouncer):
     # try making 20 requests without waiting. 10 should succeed immediately
-    url = f"{bouncer}/tokenbucket/tb1/acquire?size=10&maxWait=0"
+    url = f"{bouncer}/tokenbucket/tb1/acquire?size=10&maxwait=0"
     with multiprocessing.Pool(30) as pool:
         start = perf_counter()
         results = pool.map(tokenbucket_worker, [url] * 20)
@@ -93,7 +93,7 @@ def test_tokenbucket(bouncer):
 
 
 def test_tokenbucket_under_load(bouncer):
-    url = f"{bouncer}/tokenbucket/loadtest1/acquire?size=1000&maxWait=0&interval=1000"
+    url = f"{bouncer}/tokenbucket/loadtest1/acquire?size=1000&maxwait=0&interval=1000"
 
     with multiprocessing.Pool(50) as pool:
         start = perf_counter()
@@ -260,7 +260,7 @@ def test_event_wait_timeout(bouncer):
     # 10 clients should wait for the event, but the event should not be triggered
     # so they should all timeout
     with multiprocessing.Pool(10) as pool:
-        results = pool.map(event_worker, [f"{url}/wait?maxWait=100"] * 10)
+        results = pool.map(event_worker, [f"{url}/wait?maxwait=100"] * 10)
 
     # all 10 clients should get 408
     assert all(status == 408 for status, _ in results)
@@ -329,7 +329,7 @@ def test_watchdog_no_kicks(bouncer):
     url = f"{bouncer}/watchdog/wd1"
 
     with multiprocessing.Pool(10) as pool:
-        results = pool.map(watchdog_worker, [f"{url}/wait?maxWait=100"] * 10)
+        results = pool.map(watchdog_worker, [f"{url}/wait?maxwait=100"] * 10)
 
     # all clients should get 408
     assert all(status == 408 for status, _ in results)
@@ -344,7 +344,7 @@ def test_watchdog_with_kick(bouncer):
 
     # Then start the waiters with shorter timeout (should all timeout)
     with multiprocessing.Pool(10) as pool:
-        results = pool.map(watchdog_worker, [f"{url}/wait?maxWait=500"] * 10)
+        results = pool.map(watchdog_worker, [f"{url}/wait?maxwait=500"] * 10)
 
     # All clients should get 408 because they wait less than the expiry
     assert all(status == 408 for status, _ in results)
@@ -352,7 +352,7 @@ def test_watchdog_with_kick(bouncer):
     # Now let's test with waiters that wait longer than expiry
     with multiprocessing.Pool(10) as pool:
         start = perf_counter()
-        results = pool.map(watchdog_worker, [f"{url}/wait?maxWait=2000"] * 10)
+        results = pool.map(watchdog_worker, [f"{url}/wait?maxwait=2000"] * 10)
         end = perf_counter()
 
     # All clients should get 204 because the watchdog expired
@@ -372,7 +372,7 @@ def test_barrier_timeout(bouncer):
     # with size=10 but only 9 clients, all clients should timeout after 100ms
     with multiprocessing.Pool(9) as pool:
         start = perf_counter()
-        results = pool.map(barrier_worker, [f"{url}/wait?size=10&maxWait=100"] * 5)
+        results = pool.map(barrier_worker, [f"{url}/wait?size=10&maxwait=100"] * 5)
 
     # all clients should get 408
     assert all(status == 408 for status, _ in results)

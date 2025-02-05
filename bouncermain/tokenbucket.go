@@ -1,111 +1,90 @@
 package bouncermain
 
 import (
-	"net/http"
 	"sync"
 	"sync/atomic"
 	"time"
-
-	"github.com/julienschmidt/httprouter"
 )
 
 type TokenBucket struct {
 	Name     string
-	size     uint64
-	tokens   int64
-	interval time.Duration
-	mu       *sync.RWMutex
-	stopC    chan bool // Channel to stop the refill goroutine
+	Size     uint64
+	Interval time.Duration
 	Stats    *Metrics
+	acquireC chan bool
+	timer    *time.Timer
 }
 
-var tokenBuckets = map[string]*TokenBucket{}
-var tokenBucketsMutex = &sync.Mutex{}
+var buckets = map[string]*TokenBucket{}
+var bucketsMutex = &sync.Mutex{}
 
-func newTokenBucket(name string, size uint64, interval time.Duration) *TokenBucket {
-	bucket := &TokenBucket{
+func newTokenBucket(name string, size uint64, interval time.Duration) (bucket *TokenBucket) {
+	bucket = &TokenBucket{
 		Name:     name,
-		size:     size,
-		tokens:   int64(size),
-		interval: interval,
-		mu:       &sync.RWMutex{},
-		stopC:    make(chan bool),
-		Stats:    &Metrics{},
+		Size:     size,
+		Interval: interval,
+		Stats:    &Metrics{CreatedAt: time.Now().Format(time.RFC3339)},
+		acquireC: make(chan bool),
+		timer:    time.NewTimer(interval),
 	}
 
-	// Start refill goroutine
-	go bucket.refill()
+	buckets[name] = bucket
 
-	tokenBuckets[name] = bucket
+	go bucket.refill()
+	//go bucket.Stats.Run()
+
 	return bucket
 }
 
-func getTokenBucket(name string, size uint64, interval time.Duration) (*TokenBucket, error) {
-	tokenBucketsMutex.Lock()
-	defer tokenBucketsMutex.Unlock()
+func getTokenBucket(name string, size uint64, interval time.Duration) (bucket *TokenBucket, err error) {
+	bucketsMutex.Lock()
+	defer bucketsMutex.Unlock()
 
-	bucket, ok := tokenBuckets[name]
+	bucket, ok := buckets[name]
 	if !ok {
 		bucket = newTokenBucket(name, size, interval)
-		logger.Infof("New token bucket created: name=%v, size=%v, interval=%v", name, size, interval)
-		return bucket, nil
+		logger.Infof("tokenbucket created: name=%v, size=%v", name, size)
 	}
 
-	// If bucket exists but parameters changed, stop existing refill and start new one
-	if bucket.size != size || bucket.interval != interval {
-		bucket.mu.Lock()
-		close(bucket.stopC) // Stop existing refill goroutine
-		bucket.stopC = make(chan bool)
-		bucket.size = size
-		bucket.interval = interval
-		atomic.StoreInt64(&bucket.tokens, int64(size))
-		bucket.mu.Unlock()
+	bucket.Size = size
+	bucket.Interval = interval
 
-		go bucket.refill()
-	}
-
-	return bucket, nil
+	return
 }
 
 func (bucket *TokenBucket) refill() {
-	ticker := time.NewTicker(bucket.interval)
-	defer ticker.Stop()
-
+	var n uint64
 	for {
-		select {
-		case <-bucket.stopC:
-			return
-		case <-ticker.C:
-			bucket.mu.RLock()
-			size := bucket.size
-			bucket.mu.RUnlock()
-			atomic.StoreInt64(&bucket.tokens, int64(size))
+		// bucket size being changed midloop is not a problem, since
+		// we want size changes to take effect immediately
+		for n = 0; n < bucket.Size; n++ {
+			// make token available
+			bucket.acquireC <- true
 		}
+
+		// wait
+		<-bucket.timer.C
+
+		// and reset the timer
+		bucket.timer.Reset(bucket.Interval)
 	}
 }
 
-func (bucket *TokenBucket) Acquire(maxwait time.Duration, arrival time.Time) error {
-	started := time.Now()
+func (bucket *TokenBucket) Acquire(maxwait time.Duration, arrival time.Time) (err error) {
 
-	for {
-		tokens := atomic.LoadInt64(&bucket.tokens)
-		if tokens > 0 && atomic.CompareAndSwapInt64(&bucket.tokens, tokens, tokens-1) {
-			atomic.AddUint64(&bucket.Stats.Acquired, 1)
-			return nil
-		}
-
-		if maxwait == 0 {
-			atomic.AddUint64(&bucket.Stats.TimedOut, 1)
-			return ErrTimedOut
-		}
-
-		if maxwait > 0 && time.Since(started) >= maxwait {
-			atomic.AddUint64(&bucket.Stats.TimedOut, 1)
-			return ErrTimedOut
-		}
-
-		time.Sleep(time.Millisecond)
+	_, err = RecvTimeout(bucket.acquireC, maxwait)
+	if err != nil {
+		atomic.AddUint64(&bucket.Stats.TimedOut, 1)
+		return err
 	}
+
+	wait := uint64(time.Since(arrival) / time.Millisecond)
+
+	logger.Debugf("wait time %v", wait)
+
+	atomic.AddUint64(&bucket.Stats.Acquired, 1)
+	atomic.AddUint64(&bucket.Stats.WaitTime, wait)
+	return nil
 }
 
 func (bucket *TokenBucket) GetStats() *Metrics {
@@ -113,53 +92,13 @@ func (bucket *TokenBucket) GetStats() *Metrics {
 }
 
 func getTokenBucketStats(name string) (stats *Metrics, err error) {
-	tokenBucketsMutex.Lock()
-	defer tokenBucketsMutex.Unlock()
+	bucketsMutex.Lock()
+	defer bucketsMutex.Unlock()
 
-	bucket, ok := tokenBuckets[name]
+	bucket, ok := buckets[name]
 	if !ok {
 		return nil, ErrNotFound
 	}
 
 	return bucket.Stats, nil
-}
-
-// TokenBucketAcquireHandler godoc
-// @Summary Acquire a token from a token bucket
-// @Description Every `interval` milliseconds, the bucket is refilled with `size` tokens.
-// @Description Each acquire request takes one token out of the bucket, or waits up to `maxWait` milliseconds for a token to be available.
-// @Tags TokenBucket
-// @Produce plain
-// @Param name path string true "Token bucket name"
-// @Param size query int false "Bucket size" default(1)
-// @Param interval query int false "Refill interval" default(1000)
-// @Param maxWait query int false "Maximum wait time" default(-1)
-// @Success 204 {string} Reply "Token acquired successfully"
-// @Failure 400 {string} Reply "Bad Request - invalid parameters"
-// @Failure 404 {string} Reply "Not Found - token bucket not found
-// @Failure 408 {string} Reply "Request Timeout - `maxWait` exceeded"
-// @Router /tokenbucket/{name}/acquire [get]
-func TokenBucketAcquireHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	var err error
-	var bucket *TokenBucket
-
-	req := newRequest()
-	rep := newReply()
-
-	err = req.Decode(r.URL.Query())
-	if err == nil {
-		logger.Debugf("tokenbucket.acquire: %+v", req)
-		bucket, err = getTokenBucket(ps[0].Value, req.Size, req.Interval)
-	}
-
-	if err == nil {
-		err = bucket.Acquire(req.MaxWait, req.Arrival)
-		rep.Status = http.StatusNoContent
-	}
-
-	rep.WriteResponse(w, r, err)
-}
-
-func TokenBucketStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	ViewStats(w, r, ps, getTokenBucketStats)
 }

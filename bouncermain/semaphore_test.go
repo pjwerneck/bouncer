@@ -9,7 +9,7 @@ import (
 )
 
 func TestSemaphoreAcquireAndRelease(t *testing.T) {
-	url := fmt.Sprintf("%s/semaphore/test1/acquire?maxwait=1", server.URL)
+	url := fmt.Sprintf("%s/semaphore/test1/acquire?maxWait=1", server.URL)
 
 	status, key, err := GetRequest(url)
 	require.Nil(t, err)
@@ -19,7 +19,7 @@ func TestSemaphoreAcquireAndRelease(t *testing.T) {
 	require.Nil(t, err)
 	require.Equal(t, 408, status)
 
-	url = fmt.Sprintf("%s/semaphore/test1/release?maxwait=1&key=%s", server.URL, key)
+	url = fmt.Sprintf("%s/semaphore/test1/release?key=%s", server.URL, key)
 	status, _, err = GetRequest(url)
 	require.Nil(t, err)
 	require.Equal(t, 204, status)

@@ -38,7 +38,7 @@ paths:
       - default: -1
         description: Maximum wait time
         in: query
-        name: maxWait
+        name: maxwait
         type: integer
       produces:
       - text/plain
@@ -158,7 +158,7 @@ paths:
       - default: -1
         description: Maximum wait time
         in: query
-        name: maxWait
+        name: maxwait
         type: integer
       produces:
       - text/plain
@@ -199,7 +199,7 @@ paths:
       - default: -1
         description: Maximum wait time
         in: query
-        name: maxWait
+        name: maxwait
         type: integer
       - default: 60000
         description: Expiration time
@@ -291,7 +291,7 @@ paths:
       - default: -1
         description: Maximum wait time
         in: query
-        name: maxWait
+        name: maxwait
         type: integer
       produces:
       - text/plain
@@ -358,7 +358,7 @@ paths:
       - default: -1
         description: Maximum time to wait
         in: query
-        name: maxWait
+        name: maxwait
         type: integer
       produces:
       - text/plain
