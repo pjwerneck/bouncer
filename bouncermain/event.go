@@ -10,7 +10,7 @@ type Event struct {
 	acquireC chan bool
 	sendL    *sync.Mutex
 	closed   bool
-	Stats    *Metrics
+	Stats    *Stats
 }
 
 var events = map[string]*Event{}
@@ -60,11 +60,11 @@ func (event *Event) Send() (err error) {
 	return nil
 }
 
-func (event *Event) GetStats() *Metrics {
+func (event *Event) GetStats() *Stats {
 	return nil
 }
 
-func getEventStats(name string) (stats *Metrics, err error) {
+func getEventStats(name string) (stats *Stats, err error) {
 	eventsMutex.Lock()
 	defer eventsMutex.Unlock()
 
@@ -74,4 +74,16 @@ func getEventStats(name string) (stats *Metrics, err error) {
 	}
 
 	return event.Stats, nil
+}
+
+func deleteEvent(name string) error {
+	eventsMutex.Lock()
+	defer eventsMutex.Unlock()
+
+	if _, ok := events[name]; !ok {
+		return ErrNotFound
+	}
+
+	delete(events, name)
+	return nil
 }

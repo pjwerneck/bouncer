@@ -121,11 +121,24 @@ func CounterValueHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	rep.WriteResponse(w, r, err)
 }
 
+// CounterDeleteHandler godoc
+// @Summary Delete a counter
+// @Description Remove a counter and clean up its resources
+// @Tags Counter
+// @Produce plain
+// @Param name path string true "Counter name"
+// @Success 204 "Counter deleted successfully"
+// @Failure 404 {string} Reply "Not Found - counter not found"
+// @Router /counter/{name} [delete]
+func CounterDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	DeleteHandler(w, r, ps, deleteCounter)
+}
+
 func CounterStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	ViewStats(w, r, ps, getCounterStats)
 }
 
-func getCounterStats(name string) (*Metrics, error) {
+func getCounterStats(name string) (*Stats, error) {
 	countersMutex.Lock()
 	defer countersMutex.Unlock()
 

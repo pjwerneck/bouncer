@@ -36,5 +36,13 @@ func Router() *httprouter.Router {
 
 	r.GET("/.well-known/ready", WellKnownReady)
 
+	// Add DELETE endpoints
+	r.DELETE("/tokenbucket/:name", TokenBucketDeleteHandler)
+	r.DELETE("/semaphore/:name", SemaphoreDeleteHandler)
+	r.DELETE("/event/:name", EventDeleteHandler)
+	r.DELETE("/watchdog/:name", WatchdogDeleteHandler)
+	r.DELETE("/counter/:name", CounterDeleteHandler)
+	r.DELETE("/barrier/:name", BarrierDeleteHandler)
+
 	return r
 }

@@ -99,6 +99,19 @@ func WatchdogKickHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	rep.WriteResponse(w, r, err)
 }
 
+// WatchdogDeleteHandler godoc
+// @Summary Delete a watchdog
+// @Description Remove a watchdog and clean up its resources
+// @Tags Watchdog
+// @Produce plain
+// @Param name path string true "Watchdog name"
+// @Success 204 "Watchdog deleted successfully"
+// @Failure 404 {string} Reply "Not Found - watchdog not found"
+// @Router /watchdog/{name} [delete]
+func WatchdogDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	DeleteHandler(w, r, ps, deleteWatchdog)
+}
+
 func WatchdogStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	ViewStats(w, r, ps, getWatchdogStats)
 }

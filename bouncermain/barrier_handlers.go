@@ -35,6 +35,7 @@ func (r *BarrierWaitRequest) Decode(values url.Values) error {
 // @Success 204 "Barrier completed successfully"
 // @Failure 408 {string} Reply "Request timeout - maxWait exceeded"
 // @Router /barrier/{name}/wait [get]
+// @x-order 1
 func BarrierWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var err error
 	var barrier *Barrier
@@ -55,11 +56,25 @@ func BarrierWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	rep.WriteResponse(w, r, err)
 }
 
+// BarrierDeleteHandler godoc
+// @Summary Delete a barrier
+// @Description Remove a barrier and clean up its resources
+// @Tags Barrier
+// @Produce plain
+// @Param name path string true "Barrier name"
+// @Success 204 "Barrier deleted successfully"
+// @Failure 404 {string} Reply "Not Found - barrier not found"
+// @Router /barrier/{name} [delete]
+// @x-order 2
+func BarrierDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	DeleteHandler(w, r, ps, deleteBarrier)
+}
+
 func BarrierStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	ViewStats(w, r, ps, getBarrierStats)
 }
 
-func getBarrierStats(name string) (*Metrics, error) {
+func getBarrierStats(name string) (*Stats, error) {
 	barriersMutex.Lock()
 	defer barriersMutex.Unlock()
 

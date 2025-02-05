@@ -36,6 +36,39 @@ const docTemplate = `{
                 }
             }
         },
+        "/barrier/{name}": {
+            "delete": {
+                "description": "Remove a barrier and clean up its resources",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Barrier"
+                ],
+                "summary": "Delete a barrier",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Barrier name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Barrier deleted successfully"
+                    },
+                    "404": {
+                        "description": "Not Found - barrier not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "x-order": 2
+            }
+        },
         "/barrier/{name}/wait": {
             "get": {
                 "description": "Wait until N parties have arrived at the barrier",
@@ -75,6 +108,39 @@ const docTemplate = `{
                     },
                     "408": {
                         "description": "Request timeout - maxWait exceeded",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "x-order": 1
+            }
+        },
+        "/counter/{name}": {
+            "delete": {
+                "description": "Remove a counter and clean up its resources",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Counter"
+                ],
+                "summary": "Delete a counter",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Counter name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Counter deleted successfully"
+                    },
+                    "404": {
+                        "description": "Not Found - counter not found",
                         "schema": {
                             "type": "string"
                         }
@@ -180,6 +246,38 @@ const docTemplate = `{
                 }
             }
         },
+        "/event/{name}": {
+            "delete": {
+                "description": "Remove an event and clean up its resources",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Event"
+                ],
+                "summary": "Delete an event",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Event name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Event deleted successfully"
+                    },
+                    "404": {
+                        "description": "Not Found - event not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/event/{name}/send": {
             "get": {
                 "description": "Trigger an event",
@@ -271,6 +369,38 @@ const docTemplate = `{
                     },
                     "408": {
                         "description": "Request timeout",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/semaphore/{name}": {
+            "delete": {
+                "description": "Remove a semaphore and clean up its resources",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Semaphore"
+                ],
+                "summary": "Delete a semaphore",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Semaphore name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Semaphore deleted successfully"
+                    },
+                    "404": {
+                        "description": "Not Found - semaphore not found",
                         "schema": {
                             "type": "string"
                         }
@@ -404,6 +534,38 @@ const docTemplate = `{
                 }
             }
         },
+        "/tokenbucket/{name}": {
+            "delete": {
+                "description": "Remove a token bucket and clean up its resources",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "TokenBucket"
+                ],
+                "summary": "Delete a token bucket",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Token bucket name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Token bucket deleted successfully"
+                    },
+                    "404": {
+                        "description": "Not Found - token bucket not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/tokenbucket/{name}/acquire": {
             "get": {
                 "description": "Every ` + "`" + `interval` + "`" + ` milliseconds, the bucket is refilled with ` + "`" + `size` + "`" + ` tokens.\nEach acquire request takes one token out of the bucket, or waits up to ` + "`" + `maxWait` + "`" + ` milliseconds for a token to be available.",
@@ -465,6 +627,38 @@ const docTemplate = `{
                     },
                     "408": {
                         "description": "Request Timeout - ` + "`" + `maxWait` + "`" + ` exceeded",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/watchdog/{name}": {
+            "delete": {
+                "description": "Remove a watchdog and clean up its resources",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Watchdog"
+                ],
+                "summary": "Delete a watchdog",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Watchdog name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Watchdog deleted successfully"
+                    },
+                    "404": {
+                        "description": "Not Found - watchdog not found",
                         "schema": {
                             "type": "string"
                         }

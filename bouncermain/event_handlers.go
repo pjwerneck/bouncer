@@ -99,6 +99,19 @@ func EventSendHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 	rep.WriteResponse(w, r, err)
 }
 
+// EventDeleteHandler godoc
+// @Summary Delete an event
+// @Description Remove an event and clean up its resources
+// @Tags Event
+// @Produce plain
+// @Param name path string true "Event name"
+// @Success 204 "Event deleted successfully"
+// @Failure 404 {string} Reply "Not Found - event not found"
+// @Router /event/{name} [delete]
+func EventDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	DeleteHandler(w, r, ps, deleteEvent)
+}
+
 func EventStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	ViewStats(w, r, ps, getEventStats)
 }

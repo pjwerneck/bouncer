@@ -13,7 +13,7 @@ type Watchdog struct {
 	stopC   chan bool
 	doneC   chan bool // New channel to signal goroutine completion
 	expired bool
-	Stats   *Metrics
+	Stats   *Stats
 }
 
 var watchdogs = map[string]*Watchdog{}
@@ -27,7 +27,7 @@ func newWatchdog(name string, expires time.Duration) (watchdog *Watchdog) {
 		waitC: make(chan bool),
 		stopC: make(chan bool),
 		doneC: make(chan bool),
-		Stats: &Metrics{},
+		Stats: &Stats{},
 	}
 
 	watchdogs[name] = watchdog
@@ -130,11 +130,11 @@ func (watchdog *Watchdog) Wait(maxwait time.Duration) error {
 	return ErrTimedOut
 }
 
-func (watchdog *Watchdog) GetStats() *Metrics {
+func (watchdog *Watchdog) GetStats() *Stats {
 	return nil
 }
 
-func getWatchdogStats(name string) (stats *Metrics, err error) {
+func getWatchdogStats(name string) (stats *Stats, err error) {
 	watchdogsMutex.Lock()
 	defer watchdogsMutex.Unlock()
 
@@ -144,4 +144,21 @@ func getWatchdogStats(name string) (stats *Metrics, err error) {
 	}
 
 	return watchdog.Stats, nil
+}
+
+func deleteWatchdog(name string) error {
+	watchdogsMutex.Lock()
+	defer watchdogsMutex.Unlock()
+
+	watchdog, ok := watchdogs[name]
+	if !ok {
+		return ErrNotFound
+	}
+
+	// Stop the watch goroutine
+	close(watchdog.stopC)
+	<-watchdog.doneC
+
+	delete(watchdogs, name)
+	return nil
 }

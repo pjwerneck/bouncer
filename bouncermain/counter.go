@@ -9,7 +9,7 @@ type Counter struct {
 	Name  string
 	value int64
 	mutex *sync.RWMutex
-	Stats *Metrics
+	Stats *Stats
 }
 
 var counters = map[string]*Counter{}
@@ -19,7 +19,7 @@ func newCounter(name string) *Counter {
 	counter := &Counter{
 		Name:  name,
 		mutex: &sync.RWMutex{},
-		Stats: &Metrics{},
+		Stats: &Stats{},
 	}
 	counters[name] = counter
 	return counter
@@ -48,4 +48,16 @@ func (c *Counter) Reset(value int64) {
 
 func (c *Counter) Value() int64 {
 	return atomic.LoadInt64(&c.value)
+}
+
+func deleteCounter(name string) error {
+	countersMutex.Lock()
+	defer countersMutex.Unlock()
+
+	if _, ok := counters[name]; !ok {
+		return ErrNotFound
+	}
+
+	delete(counters, name)
+	return nil
 }

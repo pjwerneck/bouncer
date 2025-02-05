@@ -42,6 +42,23 @@ func ViewStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params, f s
 	rep.WriteResponse(w, r, err)
 }
 
+// Common delete handler function type
+type deleteFunc func(string) error
+
+// Generic delete handler
+func DeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params, df deleteFunc) {
+	rep := newReply()
+	err := df(ps[0].Value)
+
+	if err == nil {
+		rep.Status = http.StatusNoContent
+	} else if err == ErrNotFound {
+		rep.Status = http.StatusNotFound
+	}
+
+	rep.WriteResponse(w, r, err)
+}
+
 // WellKnownReady godoc
 // @Summary Readiness check
 // @Description Check if the service is ready

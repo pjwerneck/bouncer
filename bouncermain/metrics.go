@@ -1,6 +1,6 @@
 package bouncermain
 
-type Metrics struct {
+type Stats struct {
 	Nominal    uint64 `json:"nominal"`
 	Acquired   uint64 `json:"acquired"`
 	Released   uint64 `json:"released"`
@@ -11,4 +11,4 @@ type Metrics struct {
 	CreatedAt  string `json:"created_at"`
 }
 
-type statsFunc func(string) (*Metrics, error)
+type statsFunc func(string) (*Stats, error)

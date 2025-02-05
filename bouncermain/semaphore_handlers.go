@@ -108,6 +108,19 @@ func SemaphoreReleaseHandler(w http.ResponseWriter, r *http.Request, ps httprout
 	rep.WriteResponse(w, r, err)
 }
 
+// SemaphoreDeleteHandler godoc
+// @Summary Delete a semaphore
+// @Description Remove a semaphore and clean up its resources
+// @Tags Semaphore
+// @Produce plain
+// @Param name path string true "Semaphore name"
+// @Success 204 "Semaphore deleted successfully"
+// @Failure 404 {string} Reply "Not Found - semaphore not found"
+// @Router /semaphore/{name} [delete]
+func SemaphoreDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	DeleteHandler(w, r, ps, deleteSemaphore)
+}
+
 // TODO: semaphore stats should have max_ever_held, currently_held, and total_held_time
 func SemaphoreStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	ViewStats(w, r, ps, getSemaphoreStats)

@@ -15,7 +15,7 @@ type Semaphore struct {
 	acquireC chan bool
 	timers   map[string]*time.Timer
 	mu       *sync.Mutex
-	Stats    *Metrics
+	Stats    *Stats
 }
 
 var semaphores = map[string]*Semaphore{}
@@ -29,7 +29,7 @@ func newSemaphore(name string, size uint64) (semaphore *Semaphore) {
 		acquireC: make(chan bool, size),
 		timers:   make(map[string]*time.Timer),
 		mu:       &sync.Mutex{},
-		Stats:    &Metrics{CreatedAt: time.Now().Format(time.RFC3339)},
+		Stats:    &Stats{CreatedAt: time.Now().Format(time.RFC3339)},
 	}
 
 	semaphores[name] = semaphore
@@ -151,11 +151,11 @@ func (semaphore *Semaphore) Release(key string) error {
 	return err
 }
 
-func (semaphore *Semaphore) GetStats() *Metrics {
+func (semaphore *Semaphore) GetStats() *Stats {
 	return semaphore.Stats
 }
 
-func getSemaphoreStats(name string) (stats *Metrics, err error) {
+func getSemaphoreStats(name string) (stats *Stats, err error) {
 	semaphoresMutex.Lock()
 	defer semaphoresMutex.Unlock()
 
@@ -165,4 +165,25 @@ func getSemaphoreStats(name string) (stats *Metrics, err error) {
 	}
 
 	return semaphore.Stats, nil
+}
+
+func deleteSemaphore(name string) error {
+	semaphoresMutex.Lock()
+	defer semaphoresMutex.Unlock()
+
+	semaphore, ok := semaphores[name]
+	if !ok {
+		return ErrNotFound
+	}
+
+	semaphore.mu.Lock()
+	defer semaphore.mu.Unlock()
+
+	// Stop all timers
+	for _, timer := range semaphore.timers {
+		timer.Stop()
+	}
+
+	delete(semaphores, name)
+	return nil
 }

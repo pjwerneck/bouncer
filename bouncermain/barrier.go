@@ -13,7 +13,7 @@ type Barrier struct {
 	waiting    int64
 	generation int64
 	current    waitGroup
-	Stats      *Metrics
+	Stats      *Stats
 }
 
 type waitGroup struct {
@@ -30,7 +30,7 @@ func newBarrier(name string, size uint64) *Barrier {
 		Name:  name,
 		Size:  size,
 		mu:    &sync.RWMutex{},
-		Stats: &Metrics{},
+		Stats: &Stats{},
 		current: waitGroup{
 			waitC: make(chan bool),
 			doneC: make(chan bool),
@@ -108,4 +108,22 @@ func (b *Barrier) Wait(maxwait time.Duration) error {
 			return ErrTimedOut
 		}
 	}
+}
+
+func deleteBarrier(name string) error {
+	barriersMutex.Lock()
+	defer barriersMutex.Unlock()
+
+	barrier, ok := barriers[name]
+	if !ok {
+		return ErrNotFound
+	}
+
+	barrier.mu.Lock()
+	close(barrier.current.waitC)
+	close(barrier.current.doneC)
+	barrier.mu.Unlock()
+
+	delete(barriers, name)
+	return nil
 }

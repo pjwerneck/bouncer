@@ -64,6 +64,19 @@ func TokenBucketAcquireHandler(w http.ResponseWriter, r *http.Request, ps httpro
 	rep.WriteResponse(w, r, err)
 }
 
+// TokenBucketDeleteHandler godoc
+// @Summary Delete a token bucket
+// @Description Remove a token bucket and clean up its resources
+// @Tags TokenBucket
+// @Produce plain
+// @Param name path string true "Token bucket name"
+// @Success 204 "Token bucket deleted successfully"
+// @Failure 404 {string} Reply "Not Found - token bucket not found"
+// @Router /tokenbucket/{name} [delete]
+func TokenBucketDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
+	DeleteHandler(w, r, ps, deleteTokenBucket)
+}
+
 func TokenBucketStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	ViewStats(w, r, ps, getTokenBucketStats)
 }

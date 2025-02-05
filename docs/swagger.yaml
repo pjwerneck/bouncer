@@ -21,6 +21,28 @@ paths:
       summary: Readiness check
       tags:
       - Health
+  /barrier/{name}:
+    delete:
+      description: Remove a barrier and clean up its resources
+      parameters:
+      - description: Barrier name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "204":
+          description: Barrier deleted successfully
+        "404":
+          description: Not Found - barrier not found
+          schema:
+            type: string
+      summary: Delete a barrier
+      tags:
+      - Barrier
+      x-order: 2
   /barrier/{name}/wait:
     get:
       description: Wait until N parties have arrived at the barrier
@@ -52,6 +74,28 @@ paths:
       summary: Wait at barrier
       tags:
       - Barrier
+      x-order: 1
+  /counter/{name}:
+    delete:
+      description: Remove a counter and clean up its resources
+      parameters:
+      - description: Counter name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "204":
+          description: Counter deleted successfully
+        "404":
+          description: Not Found - counter not found
+          schema:
+            type: string
+      summary: Delete a counter
+      tags:
+      - Counter
   /counter/{name}/count:
     get:
       description: Atomically adds amount to counter value
@@ -117,6 +161,27 @@ paths:
       summary: Get counter value
       tags:
       - Counter
+  /event/{name}:
+    delete:
+      description: Remove an event and clean up its resources
+      parameters:
+      - description: Event name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "204":
+          description: Event deleted successfully
+        "404":
+          description: Not Found - event not found
+          schema:
+            type: string
+      summary: Delete an event
+      tags:
+      - Event
   /event/{name}/send:
     get:
       description: Trigger an event
@@ -182,6 +247,27 @@ paths:
       summary: Wait for an event
       tags:
       - Event
+  /semaphore/{name}:
+    delete:
+      description: Remove a semaphore and clean up its resources
+      parameters:
+      - description: Semaphore name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "204":
+          description: Semaphore deleted successfully
+        "404":
+          description: Not Found - semaphore not found
+          schema:
+            type: string
+      summary: Delete a semaphore
+      tags:
+      - Semaphore
   /semaphore/{name}/acquire:
     get:
       description: Acquire a semaphore lock.
@@ -267,6 +353,27 @@ paths:
       summary: Release a semaphore
       tags:
       - Semaphore
+  /tokenbucket/{name}:
+    delete:
+      description: Remove a token bucket and clean up its resources
+      parameters:
+      - description: Token bucket name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "204":
+          description: Token bucket deleted successfully
+        "404":
+          description: Not Found - token bucket not found
+          schema:
+            type: string
+      summary: Delete a token bucket
+      tags:
+      - TokenBucket
   /tokenbucket/{name}/acquire:
     get:
       description: |-
@@ -315,6 +422,27 @@ paths:
       summary: Acquire a token from a token bucket
       tags:
       - TokenBucket
+  /watchdog/{name}:
+    delete:
+      description: Remove a watchdog and clean up its resources
+      parameters:
+      - description: Watchdog name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "204":
+          description: Watchdog deleted successfully
+        "404":
+          description: Not Found - watchdog not found
+          schema:
+            type: string
+      summary: Delete a watchdog
+      tags:
+      - Watchdog
   /watchdog/{name}/kick:
     get:
       description: Reset the watchdog timer to prevent expiration

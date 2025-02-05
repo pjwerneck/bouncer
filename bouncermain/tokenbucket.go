@@ -10,7 +10,7 @@ type TokenBucket struct {
 	Name     string
 	Size     uint64
 	Interval time.Duration
-	Stats    *Metrics
+	Stats    *Stats
 	acquireC chan bool
 	timer    *time.Timer
 }
@@ -23,7 +23,7 @@ func newTokenBucket(name string, size uint64, interval time.Duration) (bucket *T
 		Name:     name,
 		Size:     size,
 		Interval: interval,
-		Stats:    &Metrics{CreatedAt: time.Now().Format(time.RFC3339)},
+		Stats:    &Stats{CreatedAt: time.Now().Format(time.RFC3339)},
 		acquireC: make(chan bool),
 		timer:    time.NewTimer(interval),
 	}
@@ -87,11 +87,11 @@ func (bucket *TokenBucket) Acquire(maxwait time.Duration, arrival time.Time) (er
 	return nil
 }
 
-func (bucket *TokenBucket) GetStats() *Metrics {
+func (bucket *TokenBucket) GetStats() *Stats {
 	return bucket.Stats
 }
 
-func getTokenBucketStats(name string) (stats *Metrics, err error) {
+func getTokenBucketStats(name string) (stats *Stats, err error) {
 	bucketsMutex.Lock()
 	defer bucketsMutex.Unlock()
 
@@ -101,4 +101,19 @@ func getTokenBucketStats(name string) (stats *Metrics, err error) {
 	}
 
 	return bucket.Stats, nil
+}
+
+func deleteTokenBucket(name string) error {
+	bucketsMutex.Lock()
+	defer bucketsMutex.Unlock()
+
+	bucket, ok := buckets[name]
+	if !ok {
+		return ErrNotFound
+	}
+
+	// Stop the refill goroutine by closing acquireC
+	close(bucket.acquireC)
+	delete(buckets, name)
+	return nil
 }
