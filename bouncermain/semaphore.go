@@ -240,6 +240,7 @@ func SemaphoreReleaseHandler(w http.ResponseWriter, r *http.Request, ps httprout
 	rep.WriteResponse(w, r, err)
 }
 
+// TODO: semaphore stats should have max_ever_held, currently_held, and total_held_time
 func SemaphoreStats(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	ViewStats(w, r, ps, getSemaphoreStats)
 }

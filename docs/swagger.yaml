@@ -1,4 +1,24 @@
 basePath: /
+definitions:
+  bouncermain.Metrics:
+    properties:
+      acquired:
+        type: integer
+      created_at:
+        type: string
+      expired:
+        type: integer
+      nominal:
+        type: integer
+      reacquired:
+        type: integer
+      released:
+        type: integer
+      timed_out:
+        type: integer
+      total_wait_time:
+        type: integer
+    type: object
 host: localhost:5505
 info:
   contact: {}
@@ -21,6 +41,71 @@ paths:
       summary: Readiness check
       tags:
       - Health
+  /counter/{name}/count:
+    get:
+      description: Atomically adds amount to counter value
+      parameters:
+      - description: Counter name
+        in: path
+        name: name
+        required: true
+        type: string
+      - default: 1
+        description: Amount to add (can be negative)
+        in: query
+        name: amount
+        type: integer
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: New counter value
+          schema:
+            type: string
+      summary: Increment or decrement counter
+      tags:
+      - Counter
+  /counter/{name}/reset:
+    get:
+      description: Set counter to specified value
+      parameters:
+      - description: Counter name
+        in: path
+        name: name
+        required: true
+        type: string
+      - default: 0
+        description: Value to set
+        in: query
+        name: value
+        type: integer
+      produces:
+      - text/plain
+      responses:
+        "204":
+          description: Counter reset successful
+      summary: Reset counter value
+      tags:
+      - Counter
+  /counter/{name}/value:
+    get:
+      description: Returns current counter value
+      parameters:
+      - description: Counter name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Current counter value
+          schema:
+            type: string
+      summary: Get counter value
+      tags:
+      - Counter
   /event/{name}/send:
     get:
       description: Trigger an event
@@ -219,9 +304,99 @@ paths:
       summary: Acquire a token from a token bucket
       tags:
       - TokenBucket
+  /watchdog/{name}/kick:
+    get:
+      description: Reset the watchdog timer to prevent expiration
+      parameters:
+      - description: Watchdog name
+        in: path
+        name: name
+        required: true
+        type: string
+      - default: 60000
+        description: Time until expiration in milliseconds
+        in: query
+        name: expires
+        type: integer
+      produces:
+      - text/plain
+      responses:
+        "204":
+          description: Watchdog timer reset successfully
+        "400":
+          description: Bad Request - invalid parameters
+          schema:
+            type: string
+        "404":
+          description: Not Found - watchdog not found
+          schema:
+            type: string
+      summary: Reset watchdog timer
+      tags:
+      - Watchdog
+  /watchdog/{name}/stats:
+    get:
+      description: Retrieve statistics for a watchdog
+      parameters:
+      - description: Watchdog name
+        in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Watchdog statistics
+          schema:
+            $ref: '#/definitions/bouncermain.Metrics'
+        "404":
+          description: Not Found - watchdog not found
+          schema:
+            type: string
+      summary: Get watchdog statistics
+      tags:
+      - Watchdog
+  /watchdog/{name}/wait:
+    get:
+      description: Wait until the watchdog timer expires. Returns immediately if already
+        expired.
+      parameters:
+      - description: Watchdog name
+        in: path
+        name: name
+        required: true
+        type: string
+      - default: -1
+        description: Maximum time to wait
+        in: query
+        name: maxWait
+        type: integer
+      produces:
+      - text/plain
+      responses:
+        "204":
+          description: Watchdog expired or maxWait reached
+        "400":
+          description: Bad Request - invalid parameters
+          schema:
+            type: string
+        "404":
+          description: Not Found - watchdog not found
+          schema:
+            type: string
+        "408":
+          description: Request Timeout - maxWait exceeded
+          schema:
+            type: string
+      summary: Wait for watchdog expiration
+      tags:
+      - Watchdog
 swagger: "2.0"
 tags:
 - name: TokenBucket
 - name: Semaphore
 - name: Event
+- name: Watchdog
+- name: Counter
 - name: Health

@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"sync"
 
-	//"sync/atomic"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
@@ -29,9 +28,6 @@ func newEvent(name string) (event *Event) {
 	}
 
 	events[name] = event
-
-	//go event.refill()
-	//go event.Stats.Run()
 
 	return event
 }
@@ -108,6 +104,7 @@ func EventWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 		event, err = getEvent(ps[0].Value)
 	}
 
+	logger.Infof("Client waiting for event: name=%v", event.Name)
 	if err == nil {
 		err = event.Wait(req.MaxWait)
 		rep.Status = http.StatusNoContent
@@ -139,6 +136,7 @@ func EventSendHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 		event, err = getEvent(ps[0].Value)
 	}
 
+	logger.Infof("Client triggered event: name=%v", event.Name)
 	if err == nil {
 		err = event.Send()
 		rep.Status = http.StatusNoContent

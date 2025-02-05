@@ -9,6 +9,8 @@
 // @tag.name TokenBucket
 // @tag.name Semaphore
 // @tag.name Event
+// @tag.name Watchdog
+// @tag.name Counter
 // @tag.name Health
 
 package bouncermain

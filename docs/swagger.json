@@ -30,6 +30,104 @@
                 }
             }
         },
+        "/counter/{name}/count": {
+            "get": {
+                "description": "Atomically adds amount to counter value",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Counter"
+                ],
+                "summary": "Increment or decrement counter",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Counter name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 1,
+                        "description": "Amount to add (can be negative)",
+                        "name": "amount",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "New counter value",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/counter/{name}/reset": {
+            "get": {
+                "description": "Set counter to specified value",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Counter"
+                ],
+                "summary": "Reset counter value",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Counter name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Value to set",
+                        "name": "value",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Counter reset successful"
+                    }
+                }
+            }
+        },
+        "/counter/{name}/value": {
+            "get": {
+                "description": "Returns current counter value",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Counter"
+                ],
+                "summary": "Get counter value",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Counter name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Current counter value",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/event/{name}/send": {
             "get": {
                 "description": "Trigger an event",
@@ -321,6 +419,168 @@
                     }
                 }
             }
+        },
+        "/watchdog/{name}/kick": {
+            "get": {
+                "description": "Reset the watchdog timer to prevent expiration",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Watchdog"
+                ],
+                "summary": "Reset watchdog timer",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Watchdog name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 60000,
+                        "description": "Time until expiration in milliseconds",
+                        "name": "expires",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Watchdog timer reset successfully"
+                    },
+                    "400": {
+                        "description": "Bad Request - invalid parameters",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - watchdog not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/watchdog/{name}/stats": {
+            "get": {
+                "description": "Retrieve statistics for a watchdog",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Watchdog"
+                ],
+                "summary": "Get watchdog statistics",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Watchdog name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Watchdog statistics",
+                        "schema": {
+                            "$ref": "#/definitions/bouncermain.Metrics"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - watchdog not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/watchdog/{name}/wait": {
+            "get": {
+                "description": "Wait until the watchdog timer expires. Returns immediately if already expired.",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Watchdog"
+                ],
+                "summary": "Wait for watchdog expiration",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Watchdog name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": -1,
+                        "description": "Maximum time to wait",
+                        "name": "maxWait",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Watchdog expired or maxWait reached"
+                    },
+                    "400": {
+                        "description": "Bad Request - invalid parameters",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - watchdog not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "408": {
+                        "description": "Request Timeout - maxWait exceeded",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "bouncermain.Metrics": {
+            "type": "object",
+            "properties": {
+                "acquired": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "expired": {
+                    "type": "integer"
+                },
+                "nominal": {
+                    "type": "integer"
+                },
+                "reacquired": {
+                    "type": "integer"
+                },
+                "released": {
+                    "type": "integer"
+                },
+                "timed_out": {
+                    "type": "integer"
+                },
+                "total_wait_time": {
+                    "type": "integer"
+                }
+            }
         }
     },
     "tags": [
@@ -332,6 +592,12 @@
         },
         {
             "name": "Event"
+        },
+        {
+            "name": "Watchdog"
+        },
+        {
+            "name": "Counter"
         },
         {
             "name": "Health"
