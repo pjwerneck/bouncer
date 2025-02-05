@@ -26,7 +26,7 @@ test:
 
 # Add swag init command to docs target
 docs:
-	swag init -g bouncermain/handlers.go --output docs
+	swag init -g bouncermain/handlers.go --markdownFiles ./descriptions --output docs
 
 docker:
 	docker build -t $(DOCKER_REPO):$(DOCKER_TAG) .

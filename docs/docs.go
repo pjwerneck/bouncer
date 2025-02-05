@@ -38,7 +38,7 @@ const docTemplate = `{
         },
         "/barrier/{name}": {
             "delete": {
-                "description": "Remove a barrier and clean up its resources",
+                "description": "Remove a barrier",
                 "produces": [
                     "text/plain"
                 ],
@@ -65,13 +65,12 @@ const docTemplate = `{
                             "type": "string"
                         }
                     }
-                },
-                "x-order": 2
+                }
             }
         },
         "/barrier/{name}/wait": {
             "get": {
-                "description": "Wait until N parties have arrived at the barrier",
+                "description": "Wait until ` + "`" + `size` + "`" + ` parties have arrived at the barrier, or until ` + "`" + `maxwait` + "`" + ` milliseconds have passed.",
                 "produces": [
                     "text/plain"
                 ],
@@ -107,18 +106,17 @@ const docTemplate = `{
                         "description": "Barrier completed successfully"
                     },
                     "408": {
-                        "description": "Request timeout - maxWait exceeded",
+                        "description": "Request Timeout - maxwait exceeded",
                         "schema": {
                             "type": "string"
                         }
                     }
-                },
-                "x-order": 1
+                }
             }
         },
         "/counter/{name}": {
             "delete": {
-                "description": "Remove a counter and clean up its resources",
+                "description": "Remove a counter",
                 "produces": [
                     "text/plain"
                 ],
@@ -150,7 +148,7 @@ const docTemplate = `{
         },
         "/counter/{name}/count": {
             "get": {
-                "description": "Atomically adds amount to counter value",
+                "description": "- Atomically adds ` + "`" + `amount` + "`" + ` to counter value\n- If ` + "`" + `amount` + "`" + ` is negative, decrements the counter\n- Returns the new counter value",
                 "produces": [
                     "text/plain"
                 ],
@@ -180,13 +178,25 @@ const docTemplate = `{
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    "400": {
+                        "description": "Bad Request - invalid parameters",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - counter not found",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 }
             }
         },
         "/counter/{name}/reset": {
             "get": {
-                "description": "Set counter to specified value",
+                "description": "- Reset counter to specified value\n- If ` + "`" + `value` + "`" + ` is not provided, resets counter to 0\n- Returns 204 No Content on success",
                 "produces": [
                     "text/plain"
                 ],
@@ -213,13 +223,25 @@ const docTemplate = `{
                 "responses": {
                     "204": {
                         "description": "Counter reset successful"
+                    },
+                    "400": {
+                        "description": "Bad Request - invalid parameters",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - counter not found",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 }
             }
         },
         "/counter/{name}/value": {
             "get": {
-                "description": "Returns current counter value",
+                "description": "- Returns current counter value",
                 "produces": [
                     "text/plain"
                 ],
@@ -242,13 +264,19 @@ const docTemplate = `{
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    "404": {
+                        "description": "Not Found - watchdog not found",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 }
             }
         },
         "/event/{name}": {
             "delete": {
-                "description": "Remove an event and clean up its resources",
+                "description": "Remove an event",
                 "produces": [
                     "text/plain"
                 ],
@@ -280,7 +308,7 @@ const docTemplate = `{
         },
         "/event/{name}/send": {
             "get": {
-                "description": "Trigger an event",
+                "description": "- Send an event, triggering all waiting clients\n- Always returns immediately\n- If the event has already been sent, returns a ` + "`" + `409 Conflict` + "`" + ` error",
                 "produces": [
                     "text/plain"
                 ],
@@ -324,7 +352,7 @@ const docTemplate = `{
         },
         "/event/{name}/wait": {
             "get": {
-                "description": "Wait for an event to be triggered",
+                "description": "- Wait for an event to be received or until ` + "`" + `maxwait` + "`" + ` milliseconds have passed\n- Returns immediately if the event has already been sent\n- If ` + "`" + `maxwait` + "`" + ` is negative, waits indefinitely.\n- If ` + "`" + `maxwait` + "`" + ` is 0, returns immediately.",
                 "produces": [
                     "text/plain"
                 ],
@@ -378,7 +406,7 @@ const docTemplate = `{
         },
         "/semaphore/{name}": {
             "delete": {
-                "description": "Remove a semaphore and clean up its resources",
+                "description": "Remove a semaphore",
                 "produces": [
                     "text/plain"
                 ],
@@ -410,7 +438,7 @@ const docTemplate = `{
         },
         "/semaphore/{name}/acquire": {
             "get": {
-                "description": "Acquire a semaphore lock.",
+                "description": "- Acquire a semaphore lock if available and returns a release ` + "`" + `key` + "`" + `\n- Up to ` + "`" + `size` + "`" + ` locks can be acquired simultaneously.\n- If no lock is available, waits up to ` + "`" + `maxwait` + "`" + ` milliseconds for a lock to be released.\n- Locks are automatically released after ` + "`" + `expires` + "`" + ` milliseconds.\n- If ` + "`" + `maxwait` + "`" + ` is negative, waits indefinitely.\n- If ` + "`" + `maxwait` + "`" + ` is 0, returns immediately.",
                 "produces": [
                     "text/plain"
                 ],
@@ -478,7 +506,7 @@ const docTemplate = `{
         },
         "/semaphore/{name}/release": {
             "get": {
-                "description": "Release a semaphore lock",
+                "description": "- The lock to be released is identified by the ` + "`" + `key` + "`" + ` returned when the lock was acquired\n- If the ` + "`" + `key` + "`" + ` is invalid or the lock is already released, a ` + "`" + `409 Conflict` + "`" + ` error is returned\n- If the lock is successfully released, a ` + "`" + `204 No Content` + "`" + ` response is returned",
                 "produces": [
                     "text/plain"
                 ],
@@ -493,13 +521,6 @@ const docTemplate = `{
                         "name": "name",
                         "in": "path",
                         "required": true
-                    },
-                    {
-                        "type": "integer",
-                        "default": 1,
-                        "description": "Semaphore size",
-                        "name": "size",
-                        "in": "query"
                     },
                     {
                         "type": "string",
@@ -536,7 +557,7 @@ const docTemplate = `{
         },
         "/tokenbucket/{name}": {
             "delete": {
-                "description": "Remove a token bucket and clean up its resources",
+                "description": "Remove a token bucket",
                 "produces": [
                     "text/plain"
                 ],
@@ -568,7 +589,7 @@ const docTemplate = `{
         },
         "/tokenbucket/{name}/acquire": {
             "get": {
-                "description": "Every ` + "`" + `interval` + "`" + ` milliseconds, the bucket is refilled with ` + "`" + `size` + "`" + ` tokens.\nEach acquire request takes one token out of the bucket, or waits up to ` + "`" + `maxWait` + "`" + ` milliseconds for a token to be available.",
+                "description": "- Each ` + "`" + `acquire` + "`" + ` request consumes one token from the bucket.\n- If no token is available, waits up to ` + "`" + `maxwait` + "`" + ` milliseconds for a fresh token to be available.\n- Every ` + "`" + `interval` + "`" + ` milliseconds the bucket is refilled with ` + "`" + `size` + "`" + ` tokens.\n- If ` + "`" + `maxwait` + "`" + ` is negative, waits indefinitely.\n- If ` + "`" + `maxwait` + "`" + ` is 0, returns immediately.",
                 "produces": [
                     "text/plain"
                 ],
@@ -626,7 +647,7 @@ const docTemplate = `{
                         }
                     },
                     "408": {
-                        "description": "Request Timeout - ` + "`" + `maxWait` + "`" + ` exceeded",
+                        "description": "Request Timeout - ` + "`" + `maxwait` + "`" + ` exceeded",
                         "schema": {
                             "type": "string"
                         }
@@ -636,7 +657,7 @@ const docTemplate = `{
         },
         "/watchdog/{name}": {
             "delete": {
-                "description": "Remove a watchdog and clean up its resources",
+                "description": "Remove a watchdog",
                 "produces": [
                     "text/plain"
                 ],
@@ -668,7 +689,7 @@ const docTemplate = `{
         },
         "/watchdog/{name}/kick": {
             "get": {
-                "description": "Reset the watchdog timer to prevent expiration",
+                "description": "- Reset the watchdog expiration timer, keeping all clients on ` + "`" + `wait` + "`" + ` requests waiting.\n- The watchdog will expire in ` + "`" + `expires` + "`" + ` milliseconds unless kicked again\n- If ` + "`" + `expires` + "`" + ` is 0 or negative, the watchdog will expire immediately",
                 "produces": [
                     "text/plain"
                 ],
@@ -713,7 +734,7 @@ const docTemplate = `{
         },
         "/watchdog/{name}/wait": {
             "get": {
-                "description": "Wait until the watchdog timer expires. Returns immediately if already expired.",
+                "description": "- Wait for a watchdog to expire or until ` + "`" + `maxwait` + "`" + ` milliseconds have passed\n- Each ` + "`" + `kick` + "`" + ` request resets the watchdog expiration timer.\n- Return immediately if the watchdog has already expired\n- If ` + "`" + `maxwait` + "`" + ` is negative, waits indefinitely.\n- If ` + "`" + `maxwait` + "`" + ` is 0, returns immediately.",
                 "produces": [
                     "text/plain"
                 ],
@@ -765,24 +786,31 @@ const docTemplate = `{
     },
     "tags": [
         {
+            "description": "rate limiter",
             "name": "TokenBucket"
         },
         {
+            "description": "limit concurrent access",
             "name": "Semaphore"
         },
         {
+            "description": "wait until event arrives",
             "name": "Event"
         },
         {
+            "description": "wait until event stops arriving",
             "name": "Watchdog"
         },
         {
+            "description": "distributed counter",
             "name": "Counter"
         },
         {
+            "description": "wait until quorum is reached",
             "name": "Barrier"
         },
         {
+            "description": "service health checks",
             "name": "Health"
         }
     ]
@@ -795,7 +823,7 @@ var SwaggerInfo = &swag.Spec{
 	BasePath:         "/",
 	Schemes:          []string{},
 	Title:            "Bouncer API",
-	Description:      "A simple rate limiting and synchronization service for distributed systems",
+	Description:      "A simple rate-limiting and synchronization service for distributed systems.\\n\\n",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
 	LeftDelim:        "{{",

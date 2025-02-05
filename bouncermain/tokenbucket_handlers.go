@@ -30,8 +30,11 @@ func (r *TokenBucketAcquireRequest) Decode(values url.Values) error {
 
 // TokenBucketAcquireHandler godoc
 // @Summary Acquire a token from a token bucket
-// @Description Every `interval` milliseconds, the bucket is refilled with `size` tokens.
-// @Description Each acquire request takes one token out of the bucket, or waits up to `maxWait` milliseconds for a token to be available.
+// @Description - Each `acquire` request consumes one token from the bucket.
+// @Description - If no token is available, waits up to `maxwait` milliseconds for a fresh token to be available.
+// @Description - Every `interval` milliseconds the bucket is refilled with `size` tokens.
+// @Description - If `maxwait` is negative, waits indefinitely.
+// @Description - If `maxwait` is 0, returns immediately.
 // @Tags TokenBucket
 // @Produce plain
 // @Param name path string true "Token bucket name"
@@ -41,7 +44,7 @@ func (r *TokenBucketAcquireRequest) Decode(values url.Values) error {
 // @Success 204 {string} Reply "Token acquired successfully"
 // @Failure 400 {string} Reply "Bad Request - invalid parameters"
 // @Failure 404 {string} Reply "Not Found - token bucket not found
-// @Failure 408 {string} Reply "Request Timeout - `maxWait` exceeded"
+// @Failure 408 {string} Reply "Request Timeout - `maxwait` exceeded"
 // @Router /tokenbucket/{name}/acquire [get]
 func TokenBucketAcquireHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var err error
@@ -66,7 +69,7 @@ func TokenBucketAcquireHandler(w http.ResponseWriter, r *http.Request, ps httpro
 
 // TokenBucketDeleteHandler godoc
 // @Summary Delete a token bucket
-// @Description Remove a token bucket and clean up its resources
+// @Description Remove a token bucket
 // @Tags TokenBucket
 // @Produce plain
 // @Param name path string true "Token bucket name"

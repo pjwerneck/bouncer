@@ -1,18 +1,25 @@
 // @title Bouncer API
 // @version 0.1.6
-// @description A simple rate limiting and synchronization service for distributed systems
-// @host localhost:5505
-// @BasePath /
 // @license.name MIT
 // @license.url https://opensource.org/licenses/MIT
+// @description A simple rate-limiting and synchronization service for distributed systems.\n\n
+// @host localhost:5505
+// @BasePath /
 
 // @tag.name TokenBucket
+// @tag.description rate limiter
 // @tag.name Semaphore
+// @tag.description limit concurrent access
 // @tag.name Event
+// @tag.description wait until event arrives
 // @tag.name Watchdog
+// @tag.description wait until event stops arriving
 // @tag.name Counter
+// @tag.description distributed counter
 // @tag.name Barrier
+// @tag.description wait until quorum is reached
 // @tag.name Health
+// @tag.description service health checks
 
 package bouncermain
 

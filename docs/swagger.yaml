@@ -2,8 +2,8 @@ basePath: /
 host: localhost:5505
 info:
   contact: {}
-  description: A simple rate limiting and synchronization service for distributed
-    systems
+  description: A simple rate-limiting and synchronization service for distributed
+    systems.\n\n
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -23,7 +23,7 @@ paths:
       - Health
   /barrier/{name}:
     delete:
-      description: Remove a barrier and clean up its resources
+      description: Remove a barrier
       parameters:
       - description: Barrier name
         in: path
@@ -42,10 +42,10 @@ paths:
       summary: Delete a barrier
       tags:
       - Barrier
-      x-order: 2
   /barrier/{name}/wait:
     get:
-      description: Wait until N parties have arrived at the barrier
+      description: Wait until `size` parties have arrived at the barrier, or until
+        `maxwait` milliseconds have passed.
       parameters:
       - description: Barrier name
         in: path
@@ -68,16 +68,15 @@ paths:
         "204":
           description: Barrier completed successfully
         "408":
-          description: Request timeout - maxWait exceeded
+          description: Request Timeout - maxwait exceeded
           schema:
             type: string
       summary: Wait at barrier
       tags:
       - Barrier
-      x-order: 1
   /counter/{name}:
     delete:
-      description: Remove a counter and clean up its resources
+      description: Remove a counter
       parameters:
       - description: Counter name
         in: path
@@ -98,7 +97,10 @@ paths:
       - Counter
   /counter/{name}/count:
     get:
-      description: Atomically adds amount to counter value
+      description: |-
+        - Atomically adds `amount` to counter value
+        - If `amount` is negative, decrements the counter
+        - Returns the new counter value
       parameters:
       - description: Counter name
         in: path
@@ -117,12 +119,23 @@ paths:
           description: New counter value
           schema:
             type: string
+        "400":
+          description: Bad Request - invalid parameters
+          schema:
+            type: string
+        "404":
+          description: Not Found - counter not found
+          schema:
+            type: string
       summary: Increment or decrement counter
       tags:
       - Counter
   /counter/{name}/reset:
     get:
-      description: Set counter to specified value
+      description: |-
+        - Reset counter to specified value
+        - If `value` is not provided, resets counter to 0
+        - Returns 204 No Content on success
       parameters:
       - description: Counter name
         in: path
@@ -139,12 +152,20 @@ paths:
       responses:
         "204":
           description: Counter reset successful
+        "400":
+          description: Bad Request - invalid parameters
+          schema:
+            type: string
+        "404":
+          description: Not Found - counter not found
+          schema:
+            type: string
       summary: Reset counter value
       tags:
       - Counter
   /counter/{name}/value:
     get:
-      description: Returns current counter value
+      description: '- Returns current counter value'
       parameters:
       - description: Counter name
         in: path
@@ -158,12 +179,16 @@ paths:
           description: Current counter value
           schema:
             type: string
+        "404":
+          description: Not Found - watchdog not found
+          schema:
+            type: string
       summary: Get counter value
       tags:
       - Counter
   /event/{name}:
     delete:
-      description: Remove an event and clean up its resources
+      description: Remove an event
       parameters:
       - description: Event name
         in: path
@@ -184,7 +209,10 @@ paths:
       - Event
   /event/{name}/send:
     get:
-      description: Trigger an event
+      description: |-
+        - Send an event, triggering all waiting clients
+        - Always returns immediately
+        - If the event has already been sent, returns a `409 Conflict` error
       parameters:
       - description: Event name
         in: path
@@ -213,7 +241,11 @@ paths:
       - Event
   /event/{name}/wait:
     get:
-      description: Wait for an event to be triggered
+      description: |-
+        - Wait for an event to be received or until `maxwait` milliseconds have passed
+        - Returns immediately if the event has already been sent
+        - If `maxwait` is negative, waits indefinitely.
+        - If `maxwait` is 0, returns immediately.
       parameters:
       - description: Event name
         in: path
@@ -249,7 +281,7 @@ paths:
       - Event
   /semaphore/{name}:
     delete:
-      description: Remove a semaphore and clean up its resources
+      description: Remove a semaphore
       parameters:
       - description: Semaphore name
         in: path
@@ -270,7 +302,13 @@ paths:
       - Semaphore
   /semaphore/{name}/acquire:
     get:
-      description: Acquire a semaphore lock.
+      description: |-
+        - Acquire a semaphore lock if available and returns a release `key`
+        - Up to `size` locks can be acquired simultaneously.
+        - If no lock is available, waits up to `maxwait` milliseconds for a lock to be released.
+        - Locks are automatically released after `expires` milliseconds.
+        - If `maxwait` is negative, waits indefinitely.
+        - If `maxwait` is 0, returns immediately.
       parameters:
       - description: Semaphore name
         in: path
@@ -316,18 +354,16 @@ paths:
       - Semaphore
   /semaphore/{name}/release:
     get:
-      description: Release a semaphore lock
+      description: |-
+        - The lock to be released is identified by the `key` returned when the lock was acquired
+        - If the `key` is invalid or the lock is already released, a `409 Conflict` error is returned
+        - If the lock is successfully released, a `204 No Content` response is returned
       parameters:
       - description: Semaphore name
         in: path
         name: name
         required: true
         type: string
-      - default: 1
-        description: Semaphore size
-        in: query
-        name: size
-        type: integer
       - description: Release key
         in: query
         name: key
@@ -355,7 +391,7 @@ paths:
       - Semaphore
   /tokenbucket/{name}:
     delete:
-      description: Remove a token bucket and clean up its resources
+      description: Remove a token bucket
       parameters:
       - description: Token bucket name
         in: path
@@ -377,8 +413,11 @@ paths:
   /tokenbucket/{name}/acquire:
     get:
       description: |-
-        Every `interval` milliseconds, the bucket is refilled with `size` tokens.
-        Each acquire request takes one token out of the bucket, or waits up to `maxWait` milliseconds for a token to be available.
+        - Each `acquire` request consumes one token from the bucket.
+        - If no token is available, waits up to `maxwait` milliseconds for a fresh token to be available.
+        - Every `interval` milliseconds the bucket is refilled with `size` tokens.
+        - If `maxwait` is negative, waits indefinitely.
+        - If `maxwait` is 0, returns immediately.
       parameters:
       - description: Token bucket name
         in: path
@@ -416,7 +455,7 @@ paths:
           schema:
             type: string
         "408":
-          description: Request Timeout - `maxWait` exceeded
+          description: Request Timeout - `maxwait` exceeded
           schema:
             type: string
       summary: Acquire a token from a token bucket
@@ -424,7 +463,7 @@ paths:
       - TokenBucket
   /watchdog/{name}:
     delete:
-      description: Remove a watchdog and clean up its resources
+      description: Remove a watchdog
       parameters:
       - description: Watchdog name
         in: path
@@ -445,7 +484,10 @@ paths:
       - Watchdog
   /watchdog/{name}/kick:
     get:
-      description: Reset the watchdog timer to prevent expiration
+      description: |-
+        - Reset the watchdog expiration timer, keeping all clients on `wait` requests waiting.
+        - The watchdog will expire in `expires` milliseconds unless kicked again
+        - If `expires` is 0 or negative, the watchdog will expire immediately
       parameters:
       - description: Watchdog name
         in: path
@@ -475,8 +517,12 @@ paths:
       - Watchdog
   /watchdog/{name}/wait:
     get:
-      description: Wait until the watchdog timer expires. Returns immediately if already
-        expired.
+      description: |-
+        - Wait for a watchdog to expire or until `maxwait` milliseconds have passed
+        - Each `kick` request resets the watchdog expiration timer.
+        - Return immediately if the watchdog has already expired
+        - If `maxwait` is negative, waits indefinitely.
+        - If `maxwait` is 0, returns immediately.
       parameters:
       - description: Watchdog name
         in: path
@@ -510,10 +556,17 @@ paths:
       - Watchdog
 swagger: "2.0"
 tags:
-- name: TokenBucket
-- name: Semaphore
-- name: Event
-- name: Watchdog
-- name: Counter
-- name: Barrier
-- name: Health
+- description: rate limiter
+  name: TokenBucket
+- description: limit concurrent access
+  name: Semaphore
+- description: wait until event arrives
+  name: Event
+- description: wait until event stops arriving
+  name: Watchdog
+- description: distributed counter
+  name: Counter
+- description: wait until quorum is reached
+  name: Barrier
+- description: service health checks
+  name: Health

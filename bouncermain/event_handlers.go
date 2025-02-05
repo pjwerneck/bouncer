@@ -36,7 +36,10 @@ func (r *EventSendRequest) Decode(values url.Values) error {
 
 // EventWaitHandler godoc
 // @Summary Wait for an event
-// @Description Wait for an event to be triggered
+// @Description - Wait for an event to be received or until `maxwait` milliseconds have passed
+// @Description - Returns immediately if the event has already been sent
+// @Description - If `maxwait` is negative, waits indefinitely.
+// @Description - If `maxwait` is 0, returns immediately.
 // @Tags Event
 // @Produce plain
 // @Param name path string true "Event name"
@@ -69,7 +72,9 @@ func EventWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 
 // EventSendHandler godoc
 // @Summary Send an event
-// @Description Trigger an event
+// @Description - Send an event, triggering all waiting clients
+// @Description - Always returns immediately
+// @Description - If the event has already been sent, returns a `409 Conflict` error
 // @Tags Event
 // @Produce plain
 // @Param name path string true "Event name"
@@ -101,7 +106,7 @@ func EventSendHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 
 // EventDeleteHandler godoc
 // @Summary Delete an event
-// @Description Remove an event and clean up its resources
+// @Description Remove an event
 // @Tags Event
 // @Produce plain
 // @Param name path string true "Event name"

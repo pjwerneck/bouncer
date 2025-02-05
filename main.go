@@ -13,10 +13,6 @@ import (
 
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
 
-// @title Bouncer API
-// @version 0.1.6
-// @description Bouncer is a simple HTTP server that provides rate limiting and synchronization primitives for distributed systems.
-
 func main() {
 	flag.Parse()
 	if *cpuprofile != "" {

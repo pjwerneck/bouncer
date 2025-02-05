@@ -40,12 +40,16 @@ func (r *CounterResetRequest) Decode(values url.Values) error {
 
 // CounterCountHandler godoc
 // @Summary Increment or decrement counter
-// @Description Atomically adds amount to counter value
+// @Description - Atomically adds `amount` to counter value
+// @Description - If `amount` is negative, decrements the counter
+// @Description - Returns the new counter value
 // @Tags Counter
 // @Produce plain
 // @Param name path string true "Counter name"
 // @Param amount query int false "Amount to add (can be negative)" default(1)
 // @Success 200 {string} string "New counter value"
+// @Failure 400 {string} Reply "Bad Request - invalid parameters"
+// @Failure 404 {string} Reply "Not Found - counter not found"
 // @Router /counter/{name}/count [get]
 func CounterCountHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var err error
@@ -70,12 +74,16 @@ func CounterCountHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 
 // CounterResetHandler godoc
 // @Summary Reset counter value
-// @Description Set counter to specified value
+// @Description - Reset counter to specified value
+// @Description - If `value` is not provided, resets counter to 0
+// @Description - Returns 204 No Content on success
 // @Tags Counter
 // @Produce plain
 // @Param name path string true "Counter name"
 // @Param value query int false "Value to set" default(0)
 // @Success 204 "Counter reset successful"
+// @Failure 400 {string} Reply "Bad Request - invalid parameters"
+// @Failure 404 {string} Reply "Not Found - counter not found"
 // @Router /counter/{name}/reset [get]
 func CounterResetHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var err error
@@ -99,11 +107,12 @@ func CounterResetHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 
 // CounterValueHandler godoc
 // @Summary Get counter value
-// @Description Returns current counter value
+// @Description - Returns current counter value
 // @Tags Counter
 // @Produce plain
 // @Param name path string true "Counter name"
 // @Success 200 {string} string "Current counter value"
+// @Failure 404 {string} Reply "Not Found - watchdog not found"
 // @Router /counter/{name}/value [get]
 func CounterValueHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var err error
@@ -123,7 +132,7 @@ func CounterValueHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 
 // CounterDeleteHandler godoc
 // @Summary Delete a counter
-// @Description Remove a counter and clean up its resources
+// @Description Remove a counter
 // @Tags Counter
 // @Produce plain
 // @Param name path string true "Counter name"
