@@ -83,11 +83,13 @@ def test_tokenbucket(bouncer):
     with multiprocessing.Pool(30) as pool:
         start = perf_counter()
         results = pool.map(tokenbucket_worker, [url] * 20)
-        end = perf_counter()
 
-    assert results.count(204) == 20
+    status = [status for status, _ in results]
+    end = [end for _, end in results]
+
+    assert status.count(204) == 20
     # give 100ms margin for the requests to complete
-    assert end - start == pytest.approx(2, abs=0.1)
+    assert max(end) - start == pytest.approx(2, abs=0.1)
 
 
 def test_tokenbucket_under_load(bouncer):
@@ -339,6 +341,66 @@ def test_watchdog_with_single_kick(bouncer):
             watchdog_worker,
             [f"{url}/wait?maxWait=1000"] * 10 + [f"{url}/kick?expires=100"],
         )
+
+    # all clients should get 204
+    assert all(status == 204 for status, _ in results)
+
+
+def barrier_worker(url):
+    response = requests.get(url)
+    return response.status_code, perf_counter()
+
+
+def test_barrier_timeout(bouncer):
+    url = f"{bouncer}/barrier/b1"
+
+    # with size=10 but only 9 clients, all clients should timeout
+    with multiprocessing.Pool(9) as pool:
+        start = perf_counter()
+        results = pool.map(barrier_worker, [f"{url}/wait?size=10&maxWait=100"] * 5)
+
+    # all clients should get 408
+    assert all(status == 408 for status, _ in results)
+
+    for _, end in results:
+        assert end - start == pytest.approx(0.1, abs=0.02)
+
+
+def test_barrier_success(bouncer):
+    url = f"{bouncer}/barrier/b2"
+
+    # start 9 clients
+    clients = []
+    for _ in range(9):
+        clients.append(
+            multiprocessing.Process(
+                target=barrier_worker, args=(f"{url}/wait?size=10",)
+            )
+        )
+        clients[-1].start()
+
+    # wait for 0.1s
+    sleep(0.1)
+
+    # start the 10th client
+    start = perf_counter()
+    response = requests.get(f"{url}/wait?size=10")
+    end = perf_counter()
+
+    # the 10th client should get 204
+    assert response.status_code == 204
+
+    # all clients should complete within 0.1s of each other
+    for client in clients:
+        client.join()
+        assert client.exitcode == 0
+
+    for client in clients:
+        assert end - start == pytest.approx(0, abs=0.1)
+
+    # barrier is fully reusable afterwards
+    with multiprocessing.Pool(10) as pool:
+        results = pool.map(barrier_worker, [f"{url}/wait?size=10"] * 10)
 
     # all clients should get 204
     assert all(status == 204 for status, _ in results)

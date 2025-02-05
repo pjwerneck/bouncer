@@ -31,6 +31,9 @@ func Router() *httprouter.Router {
 	r.GET("/counter/:name/value", CounterValueHandler)
 	r.GET("/counter/:name/stats", CounterStats)
 
+	r.GET("/barrier/:name/wait", BarrierWaitHandler)
+	r.GET("/barrier/:name/stats", BarrierStats)
+
 	r.GET("/.well-known/ready", WellKnownReady)
 
 	return r

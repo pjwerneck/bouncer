@@ -36,6 +36,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/barrier/{name}/wait": {
+            "get": {
+                "description": "Wait until N parties have arrived at the barrier",
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "Barrier"
+                ],
+                "summary": "Wait at barrier",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Barrier name",
+                        "name": "name",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "default": 2,
+                        "description": "Number of parties to wait for",
+                        "name": "size",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": -1,
+                        "description": "Maximum wait time",
+                        "name": "maxWait",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Barrier completed successfully"
+                    },
+                    "408": {
+                        "description": "Request timeout - maxWait exceeded",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/counter/{name}/count": {
             "get": {
                 "description": "Atomically adds amount to counter value",
@@ -471,41 +517,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/watchdog/{name}/stats": {
-            "get": {
-                "description": "Retrieve statistics for a watchdog",
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Watchdog"
-                ],
-                "summary": "Get watchdog statistics",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Watchdog name",
-                        "name": "name",
-                        "in": "path",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Watchdog statistics",
-                        "schema": {
-                            "$ref": "#/definitions/bouncermain.Metrics"
-                        }
-                    },
-                    "404": {
-                        "description": "Not Found - watchdog not found",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
         "/watchdog/{name}/wait": {
             "get": {
                 "description": "Wait until the watchdog timer expires. Returns immediately if already expired.",
@@ -558,37 +569,6 @@ const docTemplate = `{
             }
         }
     },
-    "definitions": {
-        "bouncermain.Metrics": {
-            "type": "object",
-            "properties": {
-                "acquired": {
-                    "type": "integer"
-                },
-                "created_at": {
-                    "type": "string"
-                },
-                "expired": {
-                    "type": "integer"
-                },
-                "nominal": {
-                    "type": "integer"
-                },
-                "reacquired": {
-                    "type": "integer"
-                },
-                "released": {
-                    "type": "integer"
-                },
-                "timed_out": {
-                    "type": "integer"
-                },
-                "total_wait_time": {
-                    "type": "integer"
-                }
-            }
-        }
-    },
     "tags": [
         {
             "name": "TokenBucket"
@@ -604,6 +584,9 @@ const docTemplate = `{
         },
         {
             "name": "Counter"
+        },
+        {
+            "name": "Barrier"
         },
         {
             "name": "Health"

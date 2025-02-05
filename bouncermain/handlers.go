@@ -11,6 +11,7 @@
 // @tag.name Event
 // @tag.name Watchdog
 // @tag.name Counter
+// @tag.name Barrier
 // @tag.name Health
 
 package bouncermain

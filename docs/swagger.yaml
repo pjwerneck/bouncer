@@ -1,24 +1,4 @@
 basePath: /
-definitions:
-  bouncermain.Metrics:
-    properties:
-      acquired:
-        type: integer
-      created_at:
-        type: string
-      expired:
-        type: integer
-      nominal:
-        type: integer
-      reacquired:
-        type: integer
-      released:
-        type: integer
-      timed_out:
-        type: integer
-      total_wait_time:
-        type: integer
-    type: object
 host: localhost:5505
 info:
   contact: {}
@@ -41,6 +21,37 @@ paths:
       summary: Readiness check
       tags:
       - Health
+  /barrier/{name}/wait:
+    get:
+      description: Wait until N parties have arrived at the barrier
+      parameters:
+      - description: Barrier name
+        in: path
+        name: name
+        required: true
+        type: string
+      - default: 2
+        description: Number of parties to wait for
+        in: query
+        name: size
+        type: integer
+      - default: -1
+        description: Maximum wait time
+        in: query
+        name: maxWait
+        type: integer
+      produces:
+      - text/plain
+      responses:
+        "204":
+          description: Barrier completed successfully
+        "408":
+          description: Request timeout - maxWait exceeded
+          schema:
+            type: string
+      summary: Wait at barrier
+      tags:
+      - Barrier
   /counter/{name}/count:
     get:
       description: Atomically adds amount to counter value
@@ -334,29 +345,6 @@ paths:
       summary: Reset watchdog timer
       tags:
       - Watchdog
-  /watchdog/{name}/stats:
-    get:
-      description: Retrieve statistics for a watchdog
-      parameters:
-      - description: Watchdog name
-        in: path
-        name: name
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Watchdog statistics
-          schema:
-            $ref: '#/definitions/bouncermain.Metrics'
-        "404":
-          description: Not Found - watchdog not found
-          schema:
-            type: string
-      summary: Get watchdog statistics
-      tags:
-      - Watchdog
   /watchdog/{name}/wait:
     get:
       description: Wait until the watchdog timer expires. Returns immediately if already
@@ -399,4 +387,5 @@ tags:
 - name: Event
 - name: Watchdog
 - name: Counter
+- name: Barrier
 - name: Health
