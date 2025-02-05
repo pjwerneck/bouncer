@@ -137,13 +137,6 @@ func (semaphore *Semaphore) Acquire(maxwait time.Duration, expires time.Duration
 			wait := uint64(time.Since(started) / time.Millisecond)
 			atomic.AddUint64(&semaphore.Stats.TotalWaitTime, wait)
 
-			// Update average wait time
-			acquired := atomic.LoadUint64(&semaphore.Stats.Acquired)
-			totalWait := atomic.LoadUint64(&semaphore.Stats.TotalWaitTime)
-			if acquired > 0 {
-				semaphore.Stats.AvgWaitTime = float64(totalWait) / float64(acquired)
-			}
-
 			// Update max ever held
 			current := uint64(len(semaphore.Keys))
 			for {
@@ -195,7 +188,15 @@ func getSemaphoreStats(name string) (stats *SemaphoreStats, err error) {
 		return nil, ErrNotFound
 	}
 
-	return semaphore.Stats, nil
+	// Create a copy and calculate average
+	stats = &SemaphoreStats{}
+	*stats = *semaphore.Stats
+	acquired := atomic.LoadUint64(&semaphore.Stats.Acquired)
+	if acquired > 0 {
+		stats.AvgWaitTime = float64(atomic.LoadUint64(&semaphore.Stats.TotalWaitTime)) / float64(acquired)
+	}
+
+	return stats, nil
 }
 
 func deleteSemaphore(name string) error {

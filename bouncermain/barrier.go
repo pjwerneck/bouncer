@@ -13,8 +13,8 @@ type BarrierStats struct {
 	TimedOut      uint64  `json:"timed_out"`
 	Triggered     uint64  `json:"triggered"`
 	TotalWaitTime uint64  `json:"total_wait_time"`
-	AvgWaitTime   float64 `json:"avg_wait_time"`
 	CreatedAt     string  `json:"created_at"`
+	AvgWaitTime   float64 `json:"avg_wait_time"`
 }
 
 type Barrier struct {
@@ -81,13 +81,6 @@ func (b *Barrier) Wait(maxwait time.Duration) error {
 		atomic.AddUint64(&b.Stats.Triggered, 1)
 		wait := uint64(time.Since(started) / time.Millisecond)
 		atomic.AddUint64(&b.Stats.TotalWaitTime, wait)
-
-		// Update average wait time
-		totalWaited := atomic.LoadUint64(&b.Stats.TotalWaited)
-		totalWait := atomic.LoadUint64(&b.Stats.TotalWaitTime)
-		if totalWaited > 0 {
-			b.Stats.AvgWaitTime = float64(totalWait) / float64(totalWaited)
-		}
 		return nil
 	}
 
@@ -119,13 +112,6 @@ func (b *Barrier) Wait(maxwait time.Duration) error {
 	atomic.AddUint64(&b.Stats.TotalWaited, 1)
 	wait := uint64(time.Since(started) / time.Millisecond)
 	atomic.AddUint64(&b.Stats.TotalWaitTime, wait)
-
-	// Update average wait time
-	totalWaited := atomic.LoadUint64(&b.Stats.TotalWaited)
-	totalWait := atomic.LoadUint64(&b.Stats.TotalWaitTime)
-	if totalWaited > 0 {
-		b.Stats.AvgWaitTime = float64(totalWait) / float64(totalWaited)
-	}
 
 	return err
 }
@@ -159,5 +145,12 @@ func getBarrierStats(name string) (*BarrierStats, error) {
 		return nil, ErrNotFound
 	}
 
-	return barrier.Stats, nil
+	// Create a copy of stats and calculate average
+	stats := *barrier.Stats
+	totalWaited := atomic.LoadUint64(&barrier.Stats.TotalWaited)
+	if totalWaited > 0 {
+		stats.AvgWaitTime = float64(atomic.LoadUint64(&barrier.Stats.TotalWaitTime)) / float64(totalWaited)
+	}
+
+	return &stats, nil
 }

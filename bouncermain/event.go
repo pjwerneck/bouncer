@@ -65,13 +65,6 @@ func (event *Event) Wait(maxwait time.Duration) (err error) {
 	atomic.AddUint64(&event.Stats.Waited, 1)
 	atomic.AddUint64(&event.Stats.TotalWaitTime, wait)
 
-	// Update average wait time
-	waited := atomic.LoadUint64(&event.Stats.Waited)
-	totalWait := atomic.LoadUint64(&event.Stats.TotalWaitTime)
-	if waited > 0 {
-		event.Stats.AvgWaitTime = float64(totalWait) / float64(waited)
-	}
-
 	return nil
 }
 
@@ -99,7 +92,15 @@ func getEventStats(name string) (stats *EventStats, err error) {
 		return nil, ErrNotFound
 	}
 
-	return event.Stats, nil
+	// Create a copy and calculate average
+	stats = &EventStats{}
+	*stats = *event.Stats
+	waited := atomic.LoadUint64(&event.Stats.Waited)
+	if waited > 0 {
+		stats.AvgWaitTime = float64(atomic.LoadUint64(&event.Stats.TotalWaitTime)) / float64(waited)
+	}
+
+	return stats, nil
 }
 
 func deleteEvent(name string) error {
