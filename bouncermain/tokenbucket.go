@@ -8,11 +8,12 @@ import (
 
 type TokenBucket struct {
 	Name     string
-	Size     uint64
-	Interval time.Duration
+	size     uint64        // private field
+	interval time.Duration // private field
 	Stats    *Stats
 	acquireC chan bool
 	timer    *time.Timer
+	mu       sync.RWMutex // protect size and interval
 }
 
 var buckets = map[string]*TokenBucket{}
@@ -21,8 +22,8 @@ var bucketsMutex = &sync.Mutex{}
 func newTokenBucket(name string, size uint64, interval time.Duration) (bucket *TokenBucket) {
 	bucket = &TokenBucket{
 		Name:     name,
-		Size:     size,
-		Interval: interval,
+		size:     size,
+		interval: interval,
 		Stats:    &Stats{CreatedAt: time.Now().Format(time.RFC3339)},
 		acquireC: make(chan bool),
 		timer:    time.NewTimer(interval),
@@ -31,7 +32,6 @@ func newTokenBucket(name string, size uint64, interval time.Duration) (bucket *T
 	buckets[name] = bucket
 
 	go bucket.refill()
-	//go bucket.Stats.Run()
 
 	return bucket
 }
@@ -44,31 +44,53 @@ func getTokenBucket(name string, size uint64, interval time.Duration) (bucket *T
 	if !ok {
 		bucket = newTokenBucket(name, size, interval)
 		logger.Infof("tokenbucket created: name=%v, size=%v", name, size)
+		return
 	}
 
-	bucket.Size = size
-	bucket.Interval = interval
+	// Check current values before acquiring lock
+	bucket.mu.RLock()
+	currentSize := bucket.size
+	currentInterval := bucket.interval
+	bucket.mu.RUnlock()
+
+	// Only update if values actually changed
+	if size != currentSize || interval != currentInterval {
+		bucket.mu.Lock()
+		bucket.size = size
+		bucket.interval = interval
+		bucket.mu.Unlock()
+	}
 
 	return
 }
 
 func (bucket *TokenBucket) refill() {
-
-	var n uint64
 	for {
-		// bucket size being changed midloop is not a problem, since
-		// we want size changes to take effect immediately
-		for n = 0; n < bucket.Size; n++ {
-			// make token available
+		bucket.mu.RLock()
+		size := bucket.size
+		interval := bucket.interval
+		bucket.mu.RUnlock()
+
+		for n := uint64(0); n < size; n++ {
 			bucket.acquireC <- true
 		}
 
-		// wait
 		<-bucket.timer.C
-
-		// and reset the timer
-		bucket.timer.Reset(bucket.Interval)
+		bucket.timer.Reset(interval)
 	}
+}
+
+// Add these getter methods for size and interval
+func (bucket *TokenBucket) Size() uint64 {
+	bucket.mu.RLock()
+	defer bucket.mu.RUnlock()
+	return bucket.size
+}
+
+func (bucket *TokenBucket) Interval() time.Duration {
+	bucket.mu.RLock()
+	defer bucket.mu.RUnlock()
+	return bucket.interval
 }
 
 func (bucket *TokenBucket) Acquire(maxwait time.Duration, arrival time.Time) (err error) {
