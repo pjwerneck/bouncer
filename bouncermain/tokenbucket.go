@@ -53,6 +53,7 @@ func getTokenBucket(name string, size uint64, interval time.Duration) (bucket *T
 }
 
 func (bucket *TokenBucket) refill() {
+
 	var n uint64
 	for {
 		// bucket size being changed midloop is not a problem, since
@@ -79,8 +80,6 @@ func (bucket *TokenBucket) Acquire(maxwait time.Duration, arrival time.Time) (er
 	}
 
 	wait := uint64(time.Since(arrival) / time.Millisecond)
-
-	logger.Debugf("wait time %v", wait)
 
 	atomic.AddUint64(&bucket.Stats.Acquired, 1)
 	atomic.AddUint64(&bucket.Stats.WaitTime, wait)

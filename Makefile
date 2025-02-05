@@ -22,7 +22,7 @@ build: docs
 	$(GOBUILD) $(LDFLAGS) -o $(APP_NAME)
 
 test:
-	$(GOTEST) -v -race ./...
+	$(GOTEST) -v -race ./... -failfast
 
 # Add swag init command to docs target
 docs:

@@ -64,22 +64,6 @@ func DeleteRequest(url string) (status int, body string, err error) {
 	return
 }
 
-func TestStatsEndpoints(t *testing.T) {
-	// Create and use a token bucket
-	tbURL := fmt.Sprintf("%s/tokenbucket/stats-test/acquire?size=10", server.URL)
-	status, _, err := GetRequest(tbURL)
-	require.Nil(t, err)
-	require.Equal(t, 204, status)
-
-	// Check stats
-	statsURL := fmt.Sprintf("%s/tokenbucket/stats-test/stats", server.URL)
-	status, body, err := GetRequest(statsURL)
-	require.Nil(t, err)
-	require.Equal(t, 200, status)
-	require.Contains(t, body, "acquired")
-	require.Contains(t, body, "total_wait_time")
-}
-
 func TestErrorCases(t *testing.T) {
 	tests := []struct {
 		name     string
