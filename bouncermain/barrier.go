@@ -7,14 +7,14 @@ import (
 )
 
 type BarrierStats struct {
-	Waiting       uint64  `json:"waiting"`
-	Size          uint64  `json:"size"`
-	TotalWaited   uint64  `json:"total_waited"`
-	TimedOut      uint64  `json:"timed_out"`
-	Triggered     uint64  `json:"triggered"`
-	TotalWaitTime uint64  `json:"total_wait_time"`
-	CreatedAt     string  `json:"created_at"`
-	AvgWaitTime   float64 `json:"avg_wait_time"`
+	Waiting         uint64  `json:"waiting"`
+	Size            uint64  `json:"size"`
+	TotalWaited     uint64  `json:"total_waited"`
+	TimedOut        uint64  `json:"timed_out"`
+	Triggered       uint64  `json:"triggered"`
+	TotalWaitTime   uint64  `json:"total_wait_time"`
+	CreatedAt       string  `json:"created_at"`
+	AverageWaitTime float64 `json:"average_wait_time"`
 }
 
 type Barrier struct {
@@ -149,7 +149,7 @@ func getBarrierStats(name string) (*BarrierStats, error) {
 	stats := *barrier.Stats
 	totalWaited := atomic.LoadUint64(&barrier.Stats.TotalWaited)
 	if totalWaited > 0 {
-		stats.AvgWaitTime = float64(atomic.LoadUint64(&barrier.Stats.TotalWaitTime)) / float64(totalWaited)
+		stats.AverageWaitTime = float64(atomic.LoadUint64(&barrier.Stats.TotalWaitTime)) / float64(totalWaited)
 	}
 
 	return &stats, nil

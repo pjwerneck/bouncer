@@ -7,12 +7,12 @@ import (
 )
 
 type EventStats struct {
-	Waited        uint64  `json:"waited"`
-	TimedOut      uint64  `json:"timed_out"`
-	Triggered     uint64  `json:"triggered"`
-	TotalWaitTime uint64  `json:"total_wait_time"`
-	AvgWaitTime   float64 `json:"avg_wait_time"`
-	CreatedAt     string  `json:"created_at"`
+	Waited          uint64  `json:"waited"`
+	TimedOut        uint64  `json:"timed_out"`
+	Triggered       uint64  `json:"triggered"`
+	TotalWaitTime   uint64  `json:"total_wait_time"`
+	AverageWaitTime float64 `json:"average_wait_time"`
+	CreatedAt       string  `json:"created_at"`
 }
 
 type Event struct {
@@ -97,7 +97,7 @@ func getEventStats(name string) (stats *EventStats, err error) {
 	*stats = *event.Stats
 	waited := atomic.LoadUint64(&event.Stats.Waited)
 	if waited > 0 {
-		stats.AvgWaitTime = float64(atomic.LoadUint64(&event.Stats.TotalWaitTime)) / float64(waited)
+		stats.AverageWaitTime = float64(atomic.LoadUint64(&event.Stats.TotalWaitTime)) / float64(waited)
 	}
 
 	return stats, nil

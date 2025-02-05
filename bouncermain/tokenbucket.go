@@ -7,11 +7,11 @@ import (
 )
 
 type TokenBucketStats struct {
-	Acquired      uint64  `json:"acquired"`
-	TotalWaitTime uint64  `json:"total_wait_time"`
-	AvgWaitTime   float64 `json:"average_wait_time"`
-	TimedOut      uint64  `json:"timed_out"`
-	CreatedAt     string  `json:"created_at"`
+	Acquired        uint64  `json:"acquired"`
+	TotalWaitTime   uint64  `json:"total_wait_time"`
+	AverageWaitTime float64 `json:"average_wait_time"`
+	TimedOut        uint64  `json:"timed_out"`
+	CreatedAt       string  `json:"created_at"`
 }
 
 type TokenBucket struct {
@@ -118,7 +118,7 @@ func (bucket *TokenBucket) Acquire(maxwait time.Duration, arrival time.Time) (er
 	acquired := atomic.LoadUint64(&bucket.Stats.Acquired)
 	totalWait := atomic.LoadUint64(&bucket.Stats.TotalWaitTime)
 	if acquired > 0 {
-		bucket.Stats.AvgWaitTime = float64(totalWait) / float64(acquired)
+		bucket.Stats.AverageWaitTime = float64(totalWait) / float64(acquired)
 	}
 
 	return nil

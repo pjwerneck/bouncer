@@ -1007,7 +1007,7 @@
         "bouncermain.BarrierStats": {
             "type": "object",
             "properties": {
-                "avg_wait_time": {
+                "average_wait_time": {
                     "type": "number"
                 },
                 "created_at": {
@@ -1053,7 +1053,7 @@
         "bouncermain.EventStats": {
             "type": "object",
             "properties": {
-                "avg_wait_time": {
+                "average_wait_time": {
                     "type": "number"
                 },
                 "created_at": {
@@ -1128,7 +1128,7 @@
         "bouncermain.WatchdogStats": {
             "type": "object",
             "properties": {
-                "avg_wait_time": {
+                "average_wait_time": {
                     "type": "number"
                 },
                 "created_at": {

@@ -9,15 +9,15 @@ import (
 )
 
 type SemaphoreStats struct {
-	Acquired      uint64  `json:"acquired"`
-	Reacquired    uint64  `json:"reacquired"`
-	Released      uint64  `json:"released"`
-	Expired       uint64  `json:"expired"`
-	TotalWaitTime uint64  `json:"total_wait_time"`
-	AvgWaitTime   float64 `json:"average_wait_time"`
-	TimedOut      uint64  `json:"timed_out"`
-	MaxEverHeld   uint64  `json:"max_ever_held"`
-	CreatedAt     string  `json:"created_at"`
+	Acquired        uint64  `json:"acquired"`
+	Reacquired      uint64  `json:"reacquired"`
+	Released        uint64  `json:"released"`
+	Expired         uint64  `json:"expired"`
+	TotalWaitTime   uint64  `json:"total_wait_time"`
+	AverageWaitTime float64 `json:"average_wait_time"`
+	TimedOut        uint64  `json:"timed_out"`
+	MaxEverHeld     uint64  `json:"max_ever_held"`
+	CreatedAt       string  `json:"created_at"`
 }
 
 type Semaphore struct {
@@ -193,7 +193,7 @@ func getSemaphoreStats(name string) (stats *SemaphoreStats, err error) {
 	*stats = *semaphore.Stats
 	acquired := atomic.LoadUint64(&semaphore.Stats.Acquired)
 	if acquired > 0 {
-		stats.AvgWaitTime = float64(atomic.LoadUint64(&semaphore.Stats.TotalWaitTime)) / float64(acquired)
+		stats.AverageWaitTime = float64(atomic.LoadUint64(&semaphore.Stats.TotalWaitTime)) / float64(acquired)
 	}
 
 	return stats, nil

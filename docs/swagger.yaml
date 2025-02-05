@@ -2,7 +2,7 @@ basePath: /
 definitions:
   bouncermain.BarrierStats:
     properties:
-      avg_wait_time:
+      average_wait_time:
         type: number
       created_at:
         type: string
@@ -32,7 +32,7 @@ definitions:
     type: object
   bouncermain.EventStats:
     properties:
-      avg_wait_time:
+      average_wait_time:
         type: number
       created_at:
         type: string
@@ -81,7 +81,7 @@ definitions:
     type: object
   bouncermain.WatchdogStats:
     properties:
-      avg_wait_time:
+      average_wait_time:
         type: number
       created_at:
         type: string

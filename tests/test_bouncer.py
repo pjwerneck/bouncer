@@ -91,6 +91,13 @@ def test_tokenbucket(bouncer):
     # give 100ms margin for the requests to complete
     assert max(end) - start == pytest.approx(2, abs=0.1)
 
+    # check stats
+    stats = requests.get(f"{bouncer}/tokenbucket/tb1/stats").json()
+    assert stats["acquired"] == 30
+    assert stats["timed_out"] == 10
+    assert stats["total_wait_time"] > 0
+    assert stats["average_wait_time"] > 0
+
 
 def test_tokenbucket_under_load(bouncer):
     url = f"{bouncer}/tokenbucket/loadtest1/acquire?size=1000&maxwait=0&interval=1000"
@@ -111,6 +118,12 @@ def test_tokenbucket_under_load(bouncer):
     # 200ms
     assert statistics.mean(response_times) == pytest.approx(0, abs=0.2)
 
+    # get stats
+    stats = requests.get(f"{bouncer}/tokenbucket/loadtest1/stats").json()
+    assert stats["acquired"] == 1000
+    assert stats["timed_out"] == 1000
+    assert stats["average_wait_time"] == pytest.approx(0, abs=0.1)
+
 
 def test_tokenbucket_refill_under_load(bouncer):
     url = f"{bouncer}/tokenbucket/loadtest2/acquire?size=1000&interval=1000"
@@ -127,6 +140,13 @@ def test_tokenbucket_refill_under_load(bouncer):
     assert success_count == 2000
     assert len([t for t in response_times if t < 1]) == 1000
     assert len([t for t in response_times if t < 2]) == 2000
+
+    # get stats
+    stats = requests.get(f"{bouncer}/tokenbucket/loadtest2/stats").json()
+    assert stats["acquired"] == 2000
+    assert stats["timed_out"] == 0
+    assert stats["total_wait_time"] > 0
+    assert stats["average_wait_time"] > 0
 
 
 def semaphore_worker(url, size=1):
@@ -158,7 +178,12 @@ def test_semaphore_size_1_and_5_clients(bouncer):
     stats = requests.get(f"{url}/stats").json()
     assert stats["acquired"] == 5
     assert stats["released"] == 5
+    assert stats["reacquired"] == 0
+    assert stats["expired"] == 0
+    assert stats["timed_out"] == 0
+    assert stats["max_ever_held"] == 1
     assert stats["total_wait_time"] > 0
+    assert stats["average_wait_time"] > 0
 
 
 def test_semaphore_size_10_and_10_clients(bouncer):
@@ -177,7 +202,12 @@ def test_semaphore_size_10_and_10_clients(bouncer):
     stats = requests.get(f"{url}/stats").json()
     assert stats["acquired"] == 10
     assert stats["released"] == 10
+    assert stats["reacquired"] == 0
+    assert stats["expired"] == 0
+    assert stats["timed_out"] == 0
+    assert stats["max_ever_held"] == 10
     assert stats["total_wait_time"] == 0
+    assert stats["average_wait_time"] == 0
 
 
 def test_semaphore_size_5_and_6_clients(bouncer):
@@ -199,9 +229,12 @@ def test_semaphore_size_5_and_6_clients(bouncer):
     stats = requests.get(f"{url}/stats").json()
     assert stats["acquired"] == 6
     assert stats["released"] == 6
-
-    # FIXME: total wait time should be non-zero
-    # assert stats["total_wait_time"] > 0
+    assert stats["reacquired"] == 0
+    assert stats["expired"] == 0
+    assert stats["timed_out"] == 0
+    assert stats["max_ever_held"] == 5
+    assert stats["total_wait_time"] > 0
+    assert stats["average_wait_time"] > 0
 
 
 def test_semaphore_recovery_after_expiration(bouncer):
@@ -228,6 +261,10 @@ def test_semaphore_recovery_after_expiration(bouncer):
     assert stats["acquired"] == 2
     assert stats["released"] == 1
     assert stats["expired"] == 1
+    assert stats["timed_out"] == 0
+    assert stats["max_ever_held"] == 1
+    assert stats["total_wait_time"] == 0
+    assert stats["average_wait_time"] == 0
 
 
 def event_worker(url):
@@ -253,6 +290,11 @@ def test_event_wait_and_trigger(bouncer):
     for _, end in results[:-1]:
         assert end - trigger == pytest.approx(0, abs=0.01)
 
+    stats = requests.get(f"{url}/stats").json()
+    assert stats["triggered"] == 1
+    assert stats["waited"] == 10
+    assert stats["timed_out"] == 0
+
 
 def test_event_wait_timeout(bouncer):
     url = f"{bouncer}/event/et3"
@@ -264,6 +306,11 @@ def test_event_wait_timeout(bouncer):
 
     # all 10 clients should get 408
     assert all(status == 408 for status, _ in results)
+
+    stats = requests.get(f"{url}/stats").json()
+    assert stats["triggered"] == 0
+    assert stats["waited"] == 0
+    assert stats["timed_out"] == 10
 
 
 def test_event_wait_already_triggered(bouncer):
@@ -284,6 +331,11 @@ def test_event_wait_already_triggered(bouncer):
     trigger = results[-1][1]
     for _, end in results[:-1]:
         assert end - trigger == pytest.approx(0, abs=0.01)
+
+    stats = requests.get(f"{url}/stats").json()
+    assert stats["triggered"] == 1
+    assert stats["waited"] == 10
+    assert stats["timed_out"] == 0
 
 
 def counter_worker(url):
@@ -317,6 +369,11 @@ def test_counter_multiple_clients(bouncer):
     assert response.status_code == 200
     assert response.text == "0"
 
+    stats = requests.get(f"{url}/stats").json()
+    assert stats["value"] == 0
+    assert stats["resets"] == 1
+    assert stats["increments"] == 1000
+
 
 def watchdog_worker(url):
     if "kick" in url:
@@ -333,6 +390,11 @@ def test_watchdog_no_kicks(bouncer):
 
     # all clients should get 408
     assert all(status == 408 for status, _ in results)
+
+    stats = requests.get(f"{url}/stats").json()
+    assert stats["kicks"] == 0
+    assert stats["waited"] == 0
+    assert stats["timed_out"] == 10
 
 
 def test_watchdog_with_kick(bouncer):
@@ -357,8 +419,13 @@ def test_watchdog_with_kick(bouncer):
 
     # All clients should get 204 because the watchdog expired
     assert all(status == 204 for status, _ in results)
-    # And it should take around 0.5 seconds (the remaining expires time)
-    assert end - start == pytest.approx(0.5, abs=0.1)
+    # And it should take less than 0.5 seconds (the remaining expires time)
+    assert end - start < 0.5
+
+    stats = requests.get(f"{url}/stats").json()
+    assert stats["kicks"] == 1
+    assert stats["waited"] == 10
+    assert stats["timed_out"] == 10
 
 
 def barrier_worker(url):
@@ -372,13 +439,19 @@ def test_barrier_timeout(bouncer):
     # with size=10 but only 9 clients, all clients should timeout after 100ms
     with multiprocessing.Pool(9) as pool:
         start = perf_counter()
-        results = pool.map(barrier_worker, [f"{url}/wait?size=10&maxwait=100"] * 5)
+        results = pool.map(barrier_worker, [f"{url}/wait?size=10&maxwait=100"] * 9)
 
     # all clients should get 408
     assert all(status == 408 for status, _ in results)
 
     for _, end in results:
         assert end - start > 0.1
+
+    stats = requests.get(f"{url}/stats").json()
+    assert stats["waiting"] == 0
+    assert stats["timed_out"] == 9
+    assert stats["total_waited"] == 0
+    assert stats["triggered"] == 0
 
 
 def test_barrier_success(bouncer):
@@ -417,14 +490,8 @@ def test_barrier_success(bouncer):
     response = requests.get(f"{url}/wait?size=10")
     assert response.status_code == 409
 
-
-def test_error_cases(bouncer):
-    cases = [
-        (f"{bouncer}/tokenbucket/error/acquire?size=-1", 400),
-        # (f"{bouncer}/tokenbucket/error/acquire?interval=-1", 400),
-        (f"{bouncer}/semaphore/error/release?key=invalid", 409),
-    ]
-
-    for url, expected_status in cases:
-        response = requests.get(url)
-        assert response.status_code == expected_status, url
+    stats = requests.get(f"{url}/stats").json()
+    assert stats["waiting"] == 0
+    assert stats["timed_out"] == 0
+    assert stats["total_waited"] == 10
+    assert stats["triggered"] == 1

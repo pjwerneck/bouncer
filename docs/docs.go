@@ -1013,7 +1013,7 @@ const docTemplate = `{
         "bouncermain.BarrierStats": {
             "type": "object",
             "properties": {
-                "avg_wait_time": {
+                "average_wait_time": {
                     "type": "number"
                 },
                 "created_at": {
@@ -1059,7 +1059,7 @@ const docTemplate = `{
         "bouncermain.EventStats": {
             "type": "object",
             "properties": {
-                "avg_wait_time": {
+                "average_wait_time": {
                     "type": "number"
                 },
                 "created_at": {
@@ -1134,7 +1134,7 @@ const docTemplate = `{
         "bouncermain.WatchdogStats": {
             "type": "object",
             "properties": {
-                "avg_wait_time": {
+                "average_wait_time": {
                     "type": "number"
                 },
                 "created_at": {
