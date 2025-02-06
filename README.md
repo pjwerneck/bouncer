@@ -115,7 +115,7 @@ Environment variables for customizing server behavior:
 |----------|---------|-------------|
 | `BOUNCER_HOST` | `0.0.0.0` | Server listen address |
 | `BOUNCER_PORT` | `5505` | Server listen port |
-| `BOUNCER_LOGLEVEL` | `INFO` | Log level (DEBUG,INFO,NOTICE,WARNING,ERROR,CRITICAL) |
+| `BOUNCER_LOGLEVEL` | `INFO` | Log level (TRACE, DEBUG,INFO,WARN,ERROR,FATAL,PANIC) |
 | `BOUNCER_READ_TIMEOUT` | `30` | HTTP read timeout (seconds) |
 | `BOUNCER_WRITE_TIMEOUT` | `30` | HTTP write timeout (seconds) |
 
