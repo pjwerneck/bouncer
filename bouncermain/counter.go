@@ -21,7 +21,7 @@ type Counter struct {
 }
 
 var counters = map[string]*Counter{}
-var countersMutex = &sync.Mutex{}
+var countersMutex = &sync.RWMutex{}
 
 func newCounter(name string) *Counter {
 	counter := &Counter{
@@ -34,10 +34,20 @@ func newCounter(name string) *Counter {
 }
 
 func getCounter(name string) (*Counter, error) {
+	countersMutex.RLock()
+	counter, ok := counters[name]
+	countersMutex.RUnlock()
+
+	if ok {
+		return counter, nil
+	}
+
+	// Counter doesn't exist, need to create it
 	countersMutex.Lock()
 	defer countersMutex.Unlock()
 
-	counter, ok := counters[name]
+	// Check again in case another goroutine created it
+	counter, ok = counters[name]
 	if !ok {
 		counter = newCounter(name)
 	}
@@ -75,8 +85,8 @@ func deleteCounter(name string) error {
 }
 
 func getCounterStats(name string) (*CounterStats, error) {
-	countersMutex.Lock()
-	defer countersMutex.Unlock()
+	countersMutex.RLock()
+	defer countersMutex.RUnlock()
 
 	counter, ok := counters[name]
 	if !ok {

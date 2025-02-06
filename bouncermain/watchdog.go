@@ -29,7 +29,7 @@ type Watchdog struct {
 }
 
 var watchdogs = map[string]*Watchdog{}
-var watchdogsMutex = &sync.Mutex{}
+var watchdogsMutex = &sync.RWMutex{}
 
 func newWatchdog(name string, expires time.Duration) (watchdog *Watchdog) {
 	watchdog = &Watchdog{
@@ -98,14 +98,25 @@ func (watchdog *Watchdog) reset(expires time.Duration) {
 }
 
 func getWatchdog(name string, expires time.Duration) (watchdog *Watchdog, err error) {
+	watchdogsMutex.RLock()
+	watchdog, ok := watchdogs[name]
+	watchdogsMutex.RUnlock()
+
+	if ok {
+		return watchdog, nil
+	}
+
+	// Watchdog doesn't exist, need to create it
 	watchdogsMutex.Lock()
 	defer watchdogsMutex.Unlock()
 
-	watchdog, ok := watchdogs[name]
-	if !ok {
-		watchdog = newWatchdog(name, expires)
+	// Check again in case another goroutine created it
+	watchdog, ok = watchdogs[name]
+	if ok {
+		return watchdog, nil
 	}
 
+	watchdog = newWatchdog(name, expires)
 	return watchdog, err
 }
 

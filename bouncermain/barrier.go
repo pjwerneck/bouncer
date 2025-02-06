@@ -28,7 +28,7 @@ type Barrier struct {
 }
 
 var barriers = map[string]*Barrier{}
-var barriersMutex = &sync.Mutex{}
+var barriersMutex = &sync.RWMutex{}
 
 func newBarrier(name string, size uint64) *Barrier {
 	barrier := &Barrier{
@@ -46,13 +46,25 @@ func newBarrier(name string, size uint64) *Barrier {
 }
 
 func getBarrier(name string, size uint64) (*Barrier, error) {
+	barriersMutex.RLock()
+	barrier, ok := barriers[name]
+	barriersMutex.RUnlock()
+
+	if ok {
+		return barrier, nil
+	}
+
+	// Barrier doesn't exist, need to create it
 	barriersMutex.Lock()
 	defer barriersMutex.Unlock()
 
-	barrier, ok := barriers[name]
-	if !ok {
-		barrier = newBarrier(name, size)
+	// Check again in case another goroutine created it
+	barrier, ok = barriers[name]
+	if ok {
+		return barrier, nil
 	}
+
+	barrier = newBarrier(name, size)
 	return barrier, nil
 }
 

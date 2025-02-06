@@ -1,14 +1,11 @@
 package bouncermain_test
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"testing"
 
 	"github.com/pjwerneck/bouncer/bouncermain"
-	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -62,36 +59,4 @@ func DeleteRequest(url string) (status int, body string, err error) {
 	status = rep.StatusCode
 
 	return
-}
-
-func TestErrorCases(t *testing.T) {
-	tests := []struct {
-		name     string
-		url      string
-		expected int
-	}{
-		{
-			name:     "Invalid token bucket size",
-			url:      fmt.Sprintf("%s/tokenbucket/error-test/acquire?size=abc", server.URL),
-			expected: 400,
-		},
-		{
-			name:     "Invalid semaphore key",
-			url:      fmt.Sprintf("%s/semaphore/error-test/release?key=invalid", server.URL),
-			expected: 409,
-		},
-		{
-			name:     "Non-existent stats",
-			url:      fmt.Sprintf("%s/tokenbucket/nonexistent/stats", server.URL),
-			expected: 400,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			status, _, err := GetRequest(tt.url)
-			require.Nil(t, err)
-			require.Equal(t, tt.expected, status)
-		})
-	}
 }

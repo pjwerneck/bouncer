@@ -25,7 +25,7 @@ type Event struct {
 }
 
 var events = map[string]*Event{}
-var eventsMutex = &sync.Mutex{}
+var eventsMutex = &sync.RWMutex{}
 
 func newEvent(name string) (event *Event) {
 	event = &Event{
@@ -41,15 +41,26 @@ func newEvent(name string) (event *Event) {
 }
 
 func getEvent(name string) (event *Event, err error) {
+	eventsMutex.RLock()
+	event, ok := events[name]
+	eventsMutex.RUnlock()
+
+	if ok {
+		return event, nil
+	}
+
+	// Event doesn't exist, need to create it
 	eventsMutex.Lock()
 	defer eventsMutex.Unlock()
 
-	event, ok := events[name]
-	if !ok {
-		event = newEvent(name)
+	// Check again in case another goroutine created it
+	event, ok = events[name]
+	if ok {
+		return event, nil
 	}
 
-	return event, err
+	event = newEvent(name)
+	return event, nil
 }
 
 func (event *Event) Wait(maxwait time.Duration) (message string, err error) {
@@ -105,8 +116,8 @@ func (event *Event) Send(message string) (err error) {
 }
 
 func getEventStats(name string) (stats *EventStats, err error) {
-	eventsMutex.Lock()
-	defer eventsMutex.Unlock()
+	eventsMutex.RLock()
+	defer eventsMutex.RUnlock()
 
 	event, ok := events[name]
 	if !ok {

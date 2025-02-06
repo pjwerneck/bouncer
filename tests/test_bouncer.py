@@ -1,4 +1,3 @@
-import itertools as it
 import multiprocessing
 import os
 import socket

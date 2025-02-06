@@ -17,7 +17,7 @@ type TokenBucketStats struct {
 
 type TokenBucket struct {
 	Name     string
-	size     uint64        // private field
+	Size     uint64        // private field
 	interval time.Duration // private field
 	Stats    *TokenBucketStats
 	mu       sync.RWMutex // protect size and interval
@@ -33,7 +33,7 @@ func newTokenBucket(name string, size uint64, interval time.Duration) (bucket *T
 	now := time.Now()
 	bucket = &TokenBucket{
 		Name:       name,
-		size:       size,
+		Size:       size,
 		interval:   interval,
 		Stats:      &TokenBucketStats{CreatedAt: now.Format(time.RFC3339)},
 		available:  int64(size),
@@ -45,30 +45,38 @@ func newTokenBucket(name string, size uint64, interval time.Duration) (bucket *T
 }
 
 func getTokenBucket(name string, size uint64, interval time.Duration) (bucket *TokenBucket, err error) {
+	bucketsMutex.RLock()
+	bucket, ok := buckets[name]
+	bucketsMutex.RUnlock()
+
+	if ok {
+		// Check if we need to update settings
+		bucket.mu.RLock()
+		currentSize := bucket.Size
+		currentInterval := bucket.interval
+		bucket.mu.RUnlock()
+
+		if size != currentSize || interval != currentInterval {
+			bucket.mu.Lock()
+			bucket.Size = size
+			bucket.interval = interval
+			bucket.mu.Unlock()
+		}
+		return bucket, nil
+	}
+
+	// Bucket doesn't exist, need to create it
 	bucketsMutex.Lock()
 	defer bucketsMutex.Unlock()
 
-	bucket, ok := buckets[name]
-	if !ok {
-		bucket = newTokenBucket(name, size, interval)
-		return
+	// Check again in case another goroutine created it
+	bucket, ok = buckets[name]
+	if ok {
+		return bucket, nil
 	}
 
-	// Check current values before acquiring lock
-	bucket.mu.RLock()
-	currentSize := bucket.size
-	currentInterval := bucket.interval
-	bucket.mu.RUnlock()
-
-	// Only update if values actually changed
-	if size != currentSize || interval != currentInterval {
-		bucket.mu.Lock()
-		bucket.size = size
-		bucket.interval = interval
-		bucket.mu.Unlock()
-	}
-
-	return
+	bucket = newTokenBucket(name, size, interval)
+	return bucket, nil
 }
 
 func (bucket *TokenBucket) refillTokens() {
@@ -83,7 +91,7 @@ func (bucket *TokenBucket) refillTokens() {
 	// Try to update nextRefill - if we fail, someone else already did it
 	if atomic.CompareAndSwapInt64(&bucket.nextRefill, next, now+bucket.interval.Nanoseconds()) {
 		bucket.mu.RLock()
-		size := bucket.size
+		size := bucket.Size
 		bucket.mu.RUnlock()
 		atomic.StoreInt64(&bucket.available, int64(size))
 	}

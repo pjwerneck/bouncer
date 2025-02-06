@@ -27,12 +27,12 @@ type Semaphore struct {
 	Keys     map[string]time.Duration
 	acquireC chan bool
 	timers   map[string]*time.Timer
-	mu       *sync.Mutex
+	mu       *sync.RWMutex
 	Stats    *SemaphoreStats
 }
 
 var semaphores = map[string]*Semaphore{}
-var semaphoresMutex = &sync.Mutex{}
+var semaphoresMutex = &sync.RWMutex{}
 
 func newSemaphore(name string, size uint64) (semaphore *Semaphore) {
 	semaphore = &Semaphore{
@@ -41,7 +41,7 @@ func newSemaphore(name string, size uint64) (semaphore *Semaphore) {
 		Keys:     make(map[string]time.Duration),
 		acquireC: make(chan bool, size),
 		timers:   make(map[string]*time.Timer),
-		mu:       &sync.Mutex{},
+		mu:       &sync.RWMutex{},
 		Stats:    &SemaphoreStats{CreatedAt: time.Now().Format(time.RFC3339)},
 	}
 
@@ -51,25 +51,42 @@ func newSemaphore(name string, size uint64) (semaphore *Semaphore) {
 }
 
 func getSemaphore(name string, size uint64) (semaphore *Semaphore, err error) {
+	semaphoresMutex.RLock()
+	semaphore, ok := semaphores[name]
+	semaphoresMutex.RUnlock()
+
+	if ok {
+		// Check if we need to update settings
+		semaphore.mu.RLock()
+		currentSize := semaphore.Size
+		semaphore.mu.RUnlock()
+
+		if size != currentSize {
+			semaphore.mu.Lock()
+			semaphore.Size = size
+			semaphore.mu.Unlock()
+		}
+
+		return semaphore, nil
+	}
+
+	// Semaphore doesn't exist, need to create it
 	semaphoresMutex.Lock()
 	defer semaphoresMutex.Unlock()
 
-	semaphore, ok := semaphores[name]
-	if !ok {
-		semaphore = newSemaphore(name, size)
-		log.Debug().Msgf("semaphore created: name=%v, size=%v", name, size)
+	// Check again in case another goroutine created it
+	semaphore, ok = semaphores[name]
+	if ok {
+		return semaphore, nil
 	}
 
-	semaphore.mu.Lock()
-	semaphore.Size = size
-	semaphore.mu.Unlock()
-
-	return semaphore, err
+	semaphore = newSemaphore(name, size)
+	return semaphore, nil
 }
 
 func (semaphore *Semaphore) getKey(key string) (expires time.Duration, ok bool) {
-	semaphore.mu.Lock()
-	defer semaphore.mu.Unlock()
+	semaphore.mu.RLock()
+	defer semaphore.mu.RUnlock()
 	expires, ok = semaphore.Keys[key]
 	return
 }
@@ -133,7 +150,6 @@ func (semaphore *Semaphore) Acquire(maxwait time.Duration, expires time.Duration
 	if ok {
 		token = key
 		atomic.AddUint64(&semaphore.Stats.Reacquired, 1)
-		log.Debug().Msgf("semaphore reacquired: name=%v, key=%v", semaphore.Name, token)
 		return token, nil
 	}
 
@@ -165,14 +181,12 @@ func (semaphore *Semaphore) Acquire(maxwait time.Duration, expires time.Duration
 		time.Sleep(time.Duration(10) * time.Millisecond)
 	}
 
-	log.Debug().Msgf("semaphore acquired: name=%v, key=%v", semaphore.Name, token)
 	return token, nil
 }
 
 func (semaphore *Semaphore) Release(key string) error {
 	err := semaphore.delKey(key)
 	atomic.AddUint64(&semaphore.Stats.Released, 1)
-	log.Debug().Msgf("semaphore released: name=%v, key=%v", semaphore.Name, key)
 	return err
 }
 
