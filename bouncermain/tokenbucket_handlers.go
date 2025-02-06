@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/rs/zerolog/log"
 )
 
 type TokenBucketAcquireRequest struct {
@@ -62,16 +63,27 @@ func TokenBucketAcquireHandler(w http.ResponseWriter, r *http.Request, ps httpro
 	if err == nil {
 		start := time.Now()
 		err = bucket.Acquire(req.MaxWait, req.Arrival)
-		elapsed := time.Since(start)
+		wait := time.Since(start)
+		logStatus := "success"
 
 		if errors.Is(err, ErrTimedOut) {
-			logger.Infof("TIMEOUT - Token bucket - acquire: name=%v id=%v size=%v interval=%v wait=%v",
-				ps[0].Value, req.ID, req.Size, req.Interval, elapsed)
+			logStatus = "timeout"
+
 		} else if err == nil {
-			logger.Infof("SUCCESS - Token bucket - acquire: name=%v id=%v size=%v interval=%v wait=%v",
-				ps[0].Value, req.ID, req.Size, req.Interval, elapsed)
 			rep.Status = http.StatusNoContent
 		}
+		log.Info().
+			Str("status", logStatus).
+			Str("type", "tokenbucket").
+			Str("call", "acquire").
+			Str("name", ps[0].Value).
+			Uint64("size", req.Size).
+			Int64("interval", req.Interval.Milliseconds()).
+			Int64("maxwait", req.MaxWait.Milliseconds()).
+			Int64("wait", wait.Milliseconds()).
+			Str("id", req.ID).
+			Send()
+
 	}
 
 	rep.WriteResponse(w, r, err)

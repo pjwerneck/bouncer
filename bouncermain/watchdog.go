@@ -104,7 +104,6 @@ func getWatchdog(name string, expires time.Duration) (watchdog *Watchdog, err er
 	watchdog, ok := watchdogs[name]
 	if !ok {
 		watchdog = newWatchdog(name, expires)
-		logger.Infof("New watchdog created: %v", name)
 	}
 
 	return watchdog, err

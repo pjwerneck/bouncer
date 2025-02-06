@@ -2,11 +2,13 @@ package bouncermain
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/rs/zerolog/log"
 )
 
 type BarrierWaitRequest struct {
@@ -49,14 +51,35 @@ func BarrierWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 
 	err = req.Decode(r.URL.Query())
 	if err == nil {
-		logger.Infof("Barrier wait requested: name=%v id=%v size=%v maxwait=%v",
-			ps[0].Value, req.ID, req.Size, req.MaxWait)
 		barrier, err = getBarrier(ps[0].Value, req.Size)
 	}
 
 	if err == nil {
+		start := time.Now()
 		err = barrier.Wait(req.MaxWait)
-		rep.Status = http.StatusNoContent
+		wait := time.Since(start)
+		logStatus := "success"
+
+		if errors.Is(err, ErrTimedOut) {
+			logStatus = "timeout"
+			rep.Status = http.StatusRequestTimeout
+		} else if errors.Is(err, ErrBarrierClosed) {
+			logStatus = "closed"
+			rep.Status = http.StatusConflict
+		} else if err == nil {
+			rep.Status = http.StatusNoContent
+		}
+
+		log.Info().
+			Str("status", logStatus).
+			Str("type", "barrier").
+			Str("call", "wait").
+			Str("name", ps[0].Value).
+			Uint64("size", req.Size).
+			Int64("maxwait", req.MaxWait.Milliseconds()).
+			Int64("wait", wait.Milliseconds()).
+			Str("id", req.ID).
+			Send()
 	}
 
 	rep.WriteResponse(w, r, err)

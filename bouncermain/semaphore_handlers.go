@@ -2,11 +2,13 @@ package bouncermain
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/rs/zerolog/log"
 )
 
 type SemaphoreAcquireRequest struct {
@@ -68,15 +70,32 @@ func SemaphoreAcquireHandler(w http.ResponseWriter, r *http.Request, ps httprout
 
 	err = req.Decode(r.URL.Query())
 	if err == nil {
-		logger.Debugf("semaphore.acquire: %+v", req)
-		logger.Infof("Semaphore acquire requested: name=%v id=%v size=%v maxwait=%v",
-			ps[0].Value, req.ID, req.Size, req.MaxWait)
 		semaphore, err = getSemaphore(ps[0].Value, req.Size)
 	}
 
 	if err == nil {
+		start := time.Now()
 		rep.Body, err = semaphore.Acquire(req.MaxWait, req.Expires, "")
-		rep.Status = http.StatusOK
+		wait := time.Since(start)
+		logStatus := "success"
+
+		if errors.Is(err, ErrTimedOut) {
+			logStatus = "timeout"
+		} else if err == nil {
+			rep.Status = http.StatusOK
+		}
+		log.Info().
+			Str("status", logStatus).
+			Str("type", "semaphore").
+			Str("call", "acquire").
+			Str("name", ps[0].Value).
+			Uint64("size", req.Size).
+			Int64("expires", req.Expires.Milliseconds()).
+			Int64("maxwait", req.MaxWait.Milliseconds()).
+			Int64("wait", wait.Milliseconds()).
+			Str("id", req.ID).
+			Send()
+
 	}
 
 	rep.WriteResponse(w, r, err)
@@ -104,15 +123,30 @@ func SemaphoreReleaseHandler(w http.ResponseWriter, r *http.Request, ps httprout
 
 	err = req.Decode(r.URL.Query())
 	if err == nil {
-		logger.Debugf("semaphore.release: %+v", req)
-		logger.Infof("Semaphore release requested: name=%v id=%v key=%v", ps[0].Value, req.ID, req.Key)
 		semaphore, err = getSemaphore(ps[0].Value, 1) // Size doesn't matter for release
 	}
 
 	if err == nil {
+		start := time.Now()
 		err = semaphore.Release(req.Key)
+		wait := time.Since(start)
+		logStatus := "success"
+
+		if errors.Is(err, ErrKeyError) {
+			logStatus = "conflict"
+		} else if err == nil {
+			rep.Status = http.StatusOK
+		}
+		log.Info().
+			Str("status", logStatus).
+			Str("type", "semaphore").
+			Str("call", "release").
+			Str("name", ps[0].Value).
+			Int64("wait", wait.Milliseconds()).
+			Str("id", req.ID).
+			Send()
+
 		rep.Status = http.StatusNoContent
-		logger.Debugf("semaphore.keys: %+v", semaphore.Keys)
 	}
 
 	rep.WriteResponse(w, r, err)

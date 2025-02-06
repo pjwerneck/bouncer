@@ -7,6 +7,7 @@ import (
 	"net/url"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/rs/zerolog/log"
 )
 
 // Counter handler requests
@@ -64,12 +65,22 @@ func CounterCountHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 
 	err = req.Decode(r.URL.Query())
 	if err == nil {
-		logger.Infof("Counter count requested: name=%v id=%v amount=%v", ps[0].Value, req.ID, req.Amount)
 		counter, err = getCounter(ps[0].Value)
 	}
 
 	if err == nil {
 		value := counter.Count(req.Amount)
+
+		log.Info().
+			Str("status", "success").
+			Str("type", "counter").
+			Str("call", "count").
+			Str("name", ps[0].Value).
+			Int64("amount", req.Amount).
+			Int64("value", value).
+			Str("id", req.ID).
+			Send()
+
 		rep.Body = fmt.Sprintf("%d", value)
 		rep.Status = http.StatusOK
 	}
@@ -98,12 +109,21 @@ func CounterResetHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 
 	err = req.Decode(r.URL.Query())
 	if err == nil {
-		logger.Infof("Counter reset requested: name=%v id=%v value=%v", ps[0].Value, req.ID, req.Value)
 		counter, err = getCounter(ps[0].Value)
 	}
 
 	if err == nil {
-		counter.Reset(int64(req.Value))
+		counter.Reset(req.Value)
+
+		log.Info().
+			Str("status", "success").
+			Str("type", "counter").
+			Str("call", "reset").
+			Str("name", ps[0].Value).
+			Int64("value", req.Value).
+			Str("id", req.ID).
+			Send()
+
 		rep.Status = http.StatusNoContent
 	}
 

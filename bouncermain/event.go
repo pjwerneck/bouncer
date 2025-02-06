@@ -47,7 +47,6 @@ func getEvent(name string) (event *Event, err error) {
 	event, ok := events[name]
 	if !ok {
 		event = newEvent(name)
-		logger.Infof("New event created: name=%v", name)
 	}
 
 	return event, err

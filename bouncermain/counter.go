@@ -40,7 +40,6 @@ func getCounter(name string) (*Counter, error) {
 	counter, ok := counters[name]
 	if !ok {
 		counter = newCounter(name)
-		logger.Infof("New counter created: name=%v", name)
 	}
 
 	return counter, nil

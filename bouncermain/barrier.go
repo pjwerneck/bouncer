@@ -52,7 +52,6 @@ func getBarrier(name string, size uint64) (*Barrier, error) {
 	barrier, ok := barriers[name]
 	if !ok {
 		barrier = newBarrier(name, size)
-		logger.Infof("New barrier created: name=%v, size=%v", name, size)
 	}
 	return barrier, nil
 }

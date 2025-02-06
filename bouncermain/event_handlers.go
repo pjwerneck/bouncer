@@ -2,11 +2,13 @@ package bouncermain
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/rs/zerolog/log"
 )
 
 // Event handler requests
@@ -64,19 +66,32 @@ func EventWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 
 	err = req.Decode(r.URL.Query())
 	if err == nil {
-		logger.Infof("Event wait requested: name=%v id=%v maxwait=%v", ps[0].Value, req.ID, req.MaxWait)
 		event, err = getEvent(ps[0].Value)
 	}
 
-	logger.Infof("Client waiting for event: name=%v", event.Name)
 	if err == nil {
+		start := time.Now()
 		message, err := event.Wait(req.MaxWait)
-		if err == nil {
-			rep.Body = message
-			rep.Status = http.StatusOK // Changed from StatusNoContent
-		} else if err == ErrTimedOut {
+		wait := time.Since(start)
+		logStatus := "success"
+
+		if errors.Is(err, ErrTimedOut) {
+			logStatus = "timeout"
 			rep.Status = http.StatusRequestTimeout
+		} else if err == nil {
+			rep.Body = message
+			rep.Status = http.StatusOK
 		}
+
+		log.Info().
+			Str("status", logStatus).
+			Str("type", "event").
+			Str("call", "wait").
+			Str("name", ps[0].Value).
+			Int64("maxwait", req.MaxWait.Milliseconds()).
+			Int64("wait", wait.Milliseconds()).
+			Str("id", req.ID).
+			Send()
 	}
 
 	rep.WriteResponse(w, r, err)
@@ -104,14 +119,30 @@ func EventSendHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 
 	err = req.Decode(r.URL.Query())
 	if err == nil {
-		logger.Infof("Event send requested: name=%v id=%v", ps[0].Value, req.ID)
 		event, err = getEvent(ps[0].Value)
 	}
 
-	logger.Infof("Client triggered event: name=%v", event.Name)
 	if err == nil {
+		start := time.Now()
 		err = event.Send(req.Message)
-		rep.Status = http.StatusNoContent
+		wait := time.Since(start)
+		logStatus := "success"
+
+		if errors.Is(err, ErrEventClosed) {
+			logStatus = "closed"
+		} else if err == nil {
+			rep.Status = http.StatusNoContent
+		}
+
+		log.Info().
+			Str("status", logStatus).
+			Str("type", "event").
+			Str("call", "send").
+			Str("name", ps[0].Value).
+			Str("message", req.Message).
+			Int64("wait", wait.Milliseconds()).
+			Str("id", req.ID).
+			Send()
 	}
 
 	rep.WriteResponse(w, r, err)

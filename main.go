@@ -5,10 +5,11 @@ import (
 	_ "github.com/pjwerneck/bouncer/docs" // swagger docs
 
 	"flag"
-	"log"
 	"os"
 	"os/signal"
 	"runtime/pprof"
+
+	"github.com/rs/zerolog/log"
 )
 
 var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
@@ -18,7 +19,7 @@ func main() {
 	if *cpuprofile != "" {
 		f, err := os.Create(*cpuprofile)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal().Err(err).Msg("could not create CPU profile")
 		}
 		defer f.Close()
 		pprof.StartCPUProfile(f)

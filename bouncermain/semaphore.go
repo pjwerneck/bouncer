@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/gofrs/uuid"
+	"github.com/rs/zerolog/log"
 )
 
 type SemaphoreStats struct {
@@ -56,7 +57,7 @@ func getSemaphore(name string, size uint64) (semaphore *Semaphore, err error) {
 	semaphore, ok := semaphores[name]
 	if !ok {
 		semaphore = newSemaphore(name, size)
-		logger.Infof("semaphore created: name=%v, size=%v", name, size)
+		log.Debug().Msgf("semaphore created: name=%v, size=%v", name, size)
 	}
 
 	semaphore.mu.Lock()
@@ -85,7 +86,7 @@ func (semaphore *Semaphore) setKey(key string, expires time.Duration) bool {
 	if expires > 0 {
 		semaphore.timers[key] = time.AfterFunc(expires,
 			func() {
-				logger.Debugf("semaphore expired: name=%v, key=%v", semaphore.Name, key)
+				log.Debug().Msgf("semaphore expired: name=%v, key=%v", semaphore.Name, key)
 				semaphore.delKey(key)
 				atomic.AddUint64(&semaphore.Stats.Expired, 1)
 			})
@@ -132,7 +133,7 @@ func (semaphore *Semaphore) Acquire(maxwait time.Duration, expires time.Duration
 	if ok {
 		token = key
 		atomic.AddUint64(&semaphore.Stats.Reacquired, 1)
-		logger.Debugf("semaphore reacquired: name=%v, key=%v", semaphore.Name, token)
+		log.Debug().Msgf("semaphore reacquired: name=%v, key=%v", semaphore.Name, token)
 		return token, nil
 	}
 
@@ -151,27 +152,27 @@ func (semaphore *Semaphore) Acquire(maxwait time.Duration, expires time.Duration
 
 		if maxwait == 0 {
 			atomic.AddUint64(&semaphore.Stats.TimedOut, 1)
-			logger.Debugf("semaphore acquire timed out: name=%v, maxwait=%v", semaphore.Name, maxwait)
+			log.Debug().Msgf("semaphore acquire timed out: name=%v, maxwait=%v", semaphore.Name, maxwait)
 			return "", ErrTimedOut
 		}
 
 		if maxwait > 0 && time.Since(started) >= maxwait {
 			atomic.AddUint64(&semaphore.Stats.TimedOut, 1)
-			logger.Debugf("semaphore acquire timed out: name=%v, maxwait=%v", semaphore.Name, maxwait)
+			log.Debug().Msgf("semaphore acquire timed out: name=%v, maxwait=%v", semaphore.Name, maxwait)
 			return "", ErrTimedOut
 		}
 
 		time.Sleep(time.Duration(10) * time.Millisecond)
 	}
 
-	logger.Debugf("semaphore acquired: name=%v, key=%v", semaphore.Name, token)
+	log.Debug().Msgf("semaphore acquired: name=%v, key=%v", semaphore.Name, token)
 	return token, nil
 }
 
 func (semaphore *Semaphore) Release(key string) error {
 	err := semaphore.delKey(key)
 	atomic.AddUint64(&semaphore.Stats.Released, 1)
-	logger.Debugf("semaphore released: name=%v, key=%v", semaphore.Name, key)
+	log.Debug().Msgf("semaphore released: name=%v, key=%v", semaphore.Name, key)
 	return err
 }
 
