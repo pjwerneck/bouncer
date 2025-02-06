@@ -8,13 +8,12 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-const maxSleepDuration = 5 * time.Second
-
 type TokenBucketStats struct {
-	Acquired      uint64 `json:"acquired"`
-	TotalWaitTime uint64 `json:"total_wait_time"`
-	TimedOut      uint64 `json:"timed_out"`
-	CreatedAt     string `json:"created_at"`
+	Acquired        uint64  `json:"acquired"`
+	TotalWaitTime   uint64  `json:"total_wait_time"`
+	TimedOut        uint64  `json:"timed_out"`
+	CreatedAt       string  `json:"created_at"`
+	AverageWaitTime float64 `json:"average_wait_time"`
 }
 
 type TokenBucket struct {
@@ -143,18 +142,6 @@ func (bucket *TokenBucket) Acquire(maxwait time.Duration, arrival time.Time) err
 	}
 }
 
-func getTokenBucketStats(name string) (stats *TokenBucketStats, err error) {
-	bucketsMutex.RLock()
-	defer bucketsMutex.RUnlock()
-
-	bucket, ok := buckets[name]
-	if !ok {
-		return nil, ErrNotFound
-	}
-
-	return bucket.Stats, nil
-}
-
 func deleteTokenBucket(name string) error {
 	bucketsMutex.Lock()
 	defer bucketsMutex.Unlock()
@@ -166,4 +153,23 @@ func deleteTokenBucket(name string) error {
 
 	delete(buckets, name) // Remove from global map
 	return nil
+}
+
+func getTokenBucketStats(name string) (interface{}, error) {
+	bucketsMutex.RLock()
+	bucket, ok := buckets[name]
+	bucketsMutex.RUnlock()
+
+	if !ok {
+		return nil, ErrNotFound
+	}
+
+	stats := &TokenBucketStats{}
+	*stats = *bucket.Stats // Copy stats
+	acquired := atomic.LoadUint64(&bucket.Stats.Acquired)
+	if acquired > 0 {
+		stats.AverageWaitTime = float64(atomic.LoadUint64(&bucket.Stats.TotalWaitTime)) / float64(acquired)
+	}
+
+	return stats, nil
 }

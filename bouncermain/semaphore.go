@@ -200,23 +200,22 @@ func (semaphore *Semaphore) GetStats() *SemaphoreStats {
 	return semaphore.Stats
 }
 
-func getSemaphoreStats(name string) (stats *SemaphoreStats, err error) {
-	semaphoresMutex.Lock()
-	defer semaphoresMutex.Unlock()
+func getSemaphoreStats(name string) (interface{}, error) {
+	semaphoresMutex.RLock()
+	defer semaphoresMutex.RUnlock()
 
 	semaphore, ok := semaphores[name]
 	if !ok {
 		return nil, ErrNotFound
 	}
 
-	// Create a copy and calculate average
-	stats = &SemaphoreStats{}
+	stats := &SemaphoreStats{}
 	*stats = *semaphore.Stats
+	totalWait := atomic.LoadUint64(&semaphore.Stats.TotalWaitTime)
 	acquired := atomic.LoadUint64(&semaphore.Stats.Acquired)
 	if acquired > 0 {
-		stats.AverageWaitTime = float64(atomic.LoadUint64(&semaphore.Stats.TotalWaitTime)) / float64(acquired)
+		stats.AverageWaitTime = float64(float64(totalWait) / float64(acquired))
 	}
-
 	return stats, nil
 }
 

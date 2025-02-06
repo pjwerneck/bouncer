@@ -28,13 +28,17 @@ func loadConfig() {
 	viper.SetDefault("logLevel", "INFO")
 	viper.SetDefault("readTimeout", 30)
 	viper.SetDefault("writeTimeout", 30)
+	viper.SetDefault("maxSleepDuration", 5000) // 5 seconds in milliseconds
 
 	viper.BindEnv("myHost", "BOUNCER_HOST")
 	viper.BindEnv("myPort", "BOUNCER_PORT")
 	viper.BindEnv("logLevel", "BOUNCER_LOGLEVEL")
 	viper.BindEnv("readTimeout", "BOUNCER_READ_TIMEOUT")
 	viper.BindEnv("writeTimeout", "BOUNCER_WRITE_TIMEOUT")
+	viper.BindEnv("maxSleepDuration", "BOUNCER_MAX_SLEEP_DURATION")
 }
+
+var maxSleepDuration = time.Duration(viper.GetInt("maxSleepDuration")) * time.Millisecond
 
 func Main() {
 	runtime.LockOSThread()

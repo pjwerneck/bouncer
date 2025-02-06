@@ -115,7 +115,7 @@ func (event *Event) Send(message string) (err error) {
 	return nil
 }
 
-func getEventStats(name string) (stats *EventStats, err error) {
+func getEventStats(name string) (interface{}, error) {
 	eventsMutex.RLock()
 	defer eventsMutex.RUnlock()
 
@@ -125,7 +125,7 @@ func getEventStats(name string) (stats *EventStats, err error) {
 	}
 
 	// Create a copy and calculate average
-	stats = &EventStats{}
+	stats := &EventStats{}
 	*stats = *event.Stats
 	waited := atomic.LoadUint64(&event.Stats.Waited)
 	if waited > 0 {

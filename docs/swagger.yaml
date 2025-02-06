@@ -70,6 +70,8 @@ definitions:
     properties:
       acquired:
         type: integer
+      average_wait_time:
+        type: number
       created_at:
         type: string
       timed_out:

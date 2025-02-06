@@ -1,7 +1,6 @@
 package bouncermain
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"net/url"
@@ -175,18 +174,5 @@ func SemaphoreDeleteHandler(w http.ResponseWriter, r *http.Request, ps httproute
 // @Failure 404 {string} Reply "Not Found - semaphore not found"
 // @Router /semaphore/{name}/stats [get]
 func SemaphoreStatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	rep := newReply()
-
-	stats, err := getSemaphoreStats(ps[0].Value)
-	if err == nil {
-		buf, _ := json.Marshal(stats)
-		rep.Body = string(buf)
-		rep.Status = http.StatusOK
-	}
-
-	if err == ErrNotFound {
-		rep.Status = http.StatusNotFound
-	}
-
-	rep.WriteResponse(w, r, err)
+	StatsHandler(w, r, ps, getSemaphoreStats)
 }

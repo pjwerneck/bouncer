@@ -24,6 +24,7 @@
 package bouncermain
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -41,6 +42,27 @@ func DeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params,
 	if err == nil {
 		rep.Status = http.StatusNoContent
 	} else if err == ErrNotFound {
+		rep.Status = http.StatusNotFound
+	}
+
+	rep.WriteResponse(w, r, err)
+}
+
+// StatsGetter is a function type for getting stats of any synchronization primitive
+type StatsGetter = func(name string) (interface{}, error)
+
+// StatsHandler creates a handler that gets stats for a synchronization primitive
+func StatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params, getter StatsGetter) {
+	rep := newReply()
+
+	stats, err := getter(ps[0].Value)
+	if err == nil {
+		buf, _ := json.Marshal(stats)
+		rep.Body = string(buf)
+		rep.Status = http.StatusOK
+	}
+
+	if err == ErrNotFound {
 		rep.Status = http.StatusNotFound
 	}
 

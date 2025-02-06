@@ -148,7 +148,7 @@ func deleteBarrier(name string) error {
 	return nil
 }
 
-func getBarrierStats(name string) (*BarrierStats, error) {
+func getBarrierStats(name string) (interface{}, error) {
 	barriersMutex.Lock()
 	defer barriersMutex.Unlock()
 

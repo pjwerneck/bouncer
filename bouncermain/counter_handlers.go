@@ -1,7 +1,6 @@
 package bouncermain
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -178,18 +177,5 @@ func CounterDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.
 // @Failure 404 {string} Reply "Not Found - counter not found"
 // @Router /counter/{name}/stats [get]
 func CounterStatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	rep := newReply()
-
-	stats, err := getCounterStats(ps[0].Value)
-	if err == nil {
-		buf, _ := json.Marshal(stats)
-		rep.Body = string(buf)
-		rep.Status = http.StatusOK
-	}
-
-	if err == ErrNotFound {
-		rep.Status = http.StatusNotFound
-	}
-
-	rep.WriteResponse(w, r, err)
+	StatsHandler(w, r, ps, getCounterStats)
 }

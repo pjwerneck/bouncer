@@ -97,7 +97,7 @@ func getWatchdog(name string, expires time.Duration) (watchdog *Watchdog, err er
 	return watchdog, err
 }
 
-func getWatchdogStats(name string) (stats *WatchdogStats, err error) {
+func getWatchdogStats(name string) (interface{}, error) {
 	watchdogsMutex.RLock()
 	defer watchdogsMutex.RUnlock()
 
@@ -106,7 +106,8 @@ func getWatchdogStats(name string) (stats *WatchdogStats, err error) {
 		return nil, ErrNotFound
 	}
 
-	stats = watchdog.Stats
+	stats := &WatchdogStats{}
+	*stats = *watchdog.Stats
 
 	return stats, nil
 }

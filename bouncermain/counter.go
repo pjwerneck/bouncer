@@ -84,7 +84,7 @@ func deleteCounter(name string) error {
 	return nil
 }
 
-func getCounterStats(name string) (*CounterStats, error) {
+func getCounterStats(name string) (interface{}, error) {
 	countersMutex.RLock()
 	defer countersMutex.RUnlock()
 

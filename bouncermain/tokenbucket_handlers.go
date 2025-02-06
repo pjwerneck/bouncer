@@ -1,11 +1,9 @@
 package bouncermain
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"net/url"
-	"sync/atomic"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
@@ -114,33 +112,5 @@ func TokenBucketDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprou
 // @Failure 404 {string} Reply "Not Found - token bucket not found"
 // @Router /tokenbucket/{name}/stats [get]
 func TokenBucketStatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	rep := newReply()
-
-	bucket, err := getTokenBucket(ps[0].Value, 0, 0)
-	if err == nil {
-		// Calculate average wait time before marshaling
-		statsMap := map[string]interface{}{
-			"acquired":        bucket.Stats.Acquired,
-			"total_wait_time": bucket.Stats.TotalWaitTime,
-			"timed_out":       bucket.Stats.TimedOut,
-			"created_at":      bucket.Stats.CreatedAt,
-			"available":       atomic.LoadInt64(&bucket.available),
-		}
-
-		if bucket.Stats.Acquired > 0 {
-			statsMap["average_wait_time"] = float64(bucket.Stats.TotalWaitTime) / float64(bucket.Stats.Acquired)
-		} else {
-			statsMap["average_wait_time"] = 0.0
-		}
-
-		buf, _ := json.Marshal(statsMap)
-		rep.Body = string(buf)
-		rep.Status = http.StatusOK
-	}
-
-	if err == ErrNotFound {
-		rep.Status = http.StatusNotFound
-	}
-
-	rep.WriteResponse(w, r, err)
+	StatsHandler(w, r, ps, getTokenBucketStats)
 }

@@ -1,7 +1,6 @@
 package bouncermain
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"net/url"
@@ -108,18 +107,5 @@ func BarrierDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.
 // @Failure 404 {string} Reply "Not Found - barrier not found"
 // @Router /barrier/{name}/stats [get]
 func BarrierStatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	rep := newReply()
-
-	stats, err := getBarrierStats(ps[0].Value)
-	if err == nil {
-		buf, _ := json.Marshal(stats)
-		rep.Body = string(buf)
-		rep.Status = http.StatusOK
-	}
-
-	if err == ErrNotFound {
-		rep.Status = http.StatusNotFound
-	}
-
-	rep.WriteResponse(w, r, err)
+	StatsHandler(w, r, ps, getBarrierStats)
 }
