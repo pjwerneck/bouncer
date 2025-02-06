@@ -16,11 +16,12 @@ type EventStats struct {
 }
 
 type Event struct {
-	Name     string
-	acquireC chan bool
-	sendL    *sync.Mutex
-	closed   bool
-	Stats    *EventStats
+	Name    string
+	message string
+	sendL   *sync.Mutex
+	closed  bool
+	waitC   chan struct{} // Changed from acquireC
+	Stats   *EventStats
 }
 
 var events = map[string]*Event{}
@@ -28,10 +29,10 @@ var eventsMutex = &sync.Mutex{}
 
 func newEvent(name string) (event *Event) {
 	event = &Event{
-		Name:     name,
-		acquireC: make(chan bool, 1),
-		sendL:    &sync.Mutex{},
-		Stats:    &EventStats{CreatedAt: time.Now().Format(time.RFC3339)},
+		Name:  name,
+		sendL: &sync.Mutex{},
+		waitC: make(chan struct{}),
+		Stats: &EventStats{CreatedAt: time.Now().Format(time.RFC3339)},
 	}
 
 	events[name] = event
@@ -52,32 +53,53 @@ func getEvent(name string) (event *Event, err error) {
 	return event, err
 }
 
-func (event *Event) Wait(maxwait time.Duration) (err error) {
+func (event *Event) Wait(maxwait time.Duration) (message string, err error) {
 	started := time.Now()
-	_, err = RecvTimeout(event.acquireC, maxwait)
 
-	if err != nil {
-		atomic.AddUint64(&event.Stats.TimedOut, 1)
-		return err
+	switch {
+	case maxwait < 0:
+		<-event.waitC
+	case maxwait == 0:
+		select {
+		case <-event.waitC:
+		default:
+			atomic.AddUint64(&event.Stats.TimedOut, 1)
+			return "", ErrTimedOut
+		}
+	default:
+		timer := time.NewTimer(maxwait)
+		defer timer.Stop()
+		select {
+		case <-event.waitC:
+		case <-timer.C:
+			atomic.AddUint64(&event.Stats.TimedOut, 1)
+			return "", ErrTimedOut
+		}
 	}
+
+	// Get message after successful wait
+	event.sendL.Lock()
+	message = event.message
+	event.sendL.Unlock()
 
 	wait := uint64(time.Since(started) / time.Millisecond)
 	atomic.AddUint64(&event.Stats.Waited, 1)
 	atomic.AddUint64(&event.Stats.TotalWaitTime, wait)
 
-	return nil
+	return message, nil
 }
 
-func (event *Event) Send() (err error) {
+func (event *Event) Send(message string) (err error) {
 	event.sendL.Lock()
 	defer event.sendL.Unlock()
 
 	if event.closed {
 		return ErrEventClosed
-	} else {
-		close(event.acquireC)
-		event.closed = true
 	}
+
+	event.message = message
+	close(event.waitC)
+	event.closed = true
 
 	atomic.AddUint64(&event.Stats.Triggered, 1)
 	return nil

@@ -24,11 +24,14 @@ func (r *EventWaitRequest) Decode(values url.Values) error {
 	return decoder.Decode(r, values)
 }
 
-// No parameters needed for send, but keeping consistent style
-type EventSendRequest struct{}
+type EventSendRequest struct {
+	Message string `schema:"message"`
+}
 
 func newEventSendRequest() *EventSendRequest {
-	return &EventSendRequest{}
+	return &EventSendRequest{
+		Message: "",
+	}
 }
 
 func (r *EventSendRequest) Decode(values url.Values) error {
@@ -37,15 +40,12 @@ func (r *EventSendRequest) Decode(values url.Values) error {
 
 // EventWaitHandler godoc
 // @Summary Wait for an event
-// @Description - Wait for an event to be received or until `maxwait` milliseconds have passed
-// @Description - Returns immediately if the event has already been sent
-// @Description - If `maxwait` is negative, waits indefinitely.
-// @Description - If `maxwait` is 0, returns immediately.
+// @Description.markdown event_wait.md
 // @Tags Event
 // @Produce plain
 // @Param name path string true "Event name"
 // @Param maxwait query int false "Maximum wait time" default(-1)
-// @Success 204 {string} Reply "Event signal received"
+// @Success 200 {string} Reply "Event signal received"
 // @Failure 400 {string} Reply "Bad Request - invalid parameters"
 // @Failure 404 {string} Reply "Not Found - event handler not found"
 // @Failure 408 {string} Reply "Request timeout"
@@ -64,8 +64,13 @@ func EventWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 
 	logger.Infof("Client waiting for event: name=%v", event.Name)
 	if err == nil {
-		err = event.Wait(req.MaxWait)
-		rep.Status = http.StatusNoContent
+		message, err := event.Wait(req.MaxWait)
+		if err == nil {
+			rep.Body = message
+			rep.Status = http.StatusOK // Changed from StatusNoContent
+		} else if err == ErrTimedOut {
+			rep.Status = http.StatusRequestTimeout
+		}
 	}
 
 	rep.WriteResponse(w, r, err)
@@ -73,12 +78,11 @@ func EventWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 
 // EventSendHandler godoc
 // @Summary Send an event
-// @Description - Send an event, triggering all waiting clients
-// @Description - Always returns immediately
-// @Description - If the event has already been sent, returns a `409 Conflict` error
+// @Description.markdown event_send.md
 // @Tags Event
 // @Produce plain
 // @Param name path string true "Event name"
+// @Param message query string false "Event message"
 // @Success 204 "Event sent successfully"
 // @Failure 400 {string} Reply "Bad Request - invalid parameters"
 // @Failure 404 {string} Reply "Not Found - event handler not found"
@@ -98,7 +102,7 @@ func EventSendHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 
 	logger.Infof("Client triggered event: name=%v", event.Name)
 	if err == nil {
-		err = event.Send()
+		err = event.Send(req.Message)
 		rep.Status = http.StatusNoContent
 	}
 

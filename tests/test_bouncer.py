@@ -271,7 +271,7 @@ def event_worker(url):
     if url.endswith("send"):
         sleep(0.1)
     response = requests.get(url)
-    return response.status_code, perf_counter()
+    return response.status_code, response.text, perf_counter()
 
 
 def test_event_wait_and_trigger(bouncer):
@@ -280,14 +280,18 @@ def test_event_wait_and_trigger(bouncer):
     # 10 clients should wait for the event, 1 client should trigger it after
     # waiting for 0.1s
     with multiprocessing.Pool(11) as pool:
-        results = pool.map(event_worker, [f"{url}/wait"] * 10 + [f"{url}/send"])
+        results = pool.map(
+            event_worker, [f"{url}/wait"] * 10 + [f"{url}/send?message=lero"]
+        )
 
-    # all 11 clients should get 204
-    assert all(status == 204 for status, _ in results)
+    # all 10 clients should get 200
+    assert all(status == 200 for status, _, _ in results[:10])
+    # all 10 clients should get the same message
+    assert all(message == "lero" for _, message, _ in results[:10])
 
     # the 10 clients should get the response within 0.01s of the trigger
-    trigger = results[-1][1]
-    for _, end in results[:-1]:
+    trigger = results[-1][2]
+    for _, _, end in results[:-1]:
         assert end - trigger == pytest.approx(0, abs=0.01)
 
     stats = requests.get(f"{url}/stats").json()
@@ -305,7 +309,7 @@ def test_event_wait_timeout(bouncer):
         results = pool.map(event_worker, [f"{url}/wait?maxwait=100"] * 10)
 
     # all 10 clients should get 408
-    assert all(status == 408 for status, _ in results)
+    assert all(status == 408 for status, _, _ in results)
 
     stats = requests.get(f"{url}/stats").json()
     assert stats["triggered"] == 0
@@ -317,19 +321,21 @@ def test_event_wait_already_triggered(bouncer):
     url = f"{bouncer}/event/et4"
 
     # trigger before any clients are waiting
-    response = requests.get(f"{url}/send")
+    response = requests.get(f"{url}/send?message=hurry")
     assert response.status_code == 204
 
     # 10 clients should wait for the event and get 204 immediately
     with multiprocessing.Pool(10) as pool:
         results = pool.map(event_worker, [f"{url}/wait"] * 10)
 
-    # all 10 clients should get 204
-    assert all(status == 204 for status, _ in results)
+    # all 10 clients should get 200
+    assert all(status == 200 for status, _, _ in results)
+    # all 10 clients should get the same message
+    assert all(message == "hurry" for _, message, _ in results)
 
     # the 10 clients should get the response immediately
-    trigger = results[-1][1]
-    for _, end in results[:-1]:
+    trigger = results[-1][2]
+    for _, _, end in results[:-1]:
         assert end - trigger == pytest.approx(0, abs=0.01)
 
     stats = requests.get(f"{url}/stats").json()

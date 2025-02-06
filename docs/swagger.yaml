@@ -382,15 +382,28 @@ paths:
       - Event
   /event/{name}/send:
     get:
-      description: |-
-        - Send an event, triggering all waiting clients
-        - Always returns immediately
-        - If the event has already been sent, returns a `409 Conflict` error
+      description: |
+        Triggers an event, sending a message to all waiting clients.
+
+        ### Basic Operation
+        - Sends optional message to all waiting clients
+        - Returns immediately
+        - Can only be triggered once
+        - Already triggered events return 409 Conflict
+
+        ### Usage Tips
+        - Use meaningful messages for easier debugging
+        - Empty message is allowed but not recommended
+        - All waiting clients receive the same message
       parameters:
       - description: Event name
         in: path
         name: name
         required: true
+        type: string
+      - description: Event message
+        in: query
+        name: message
         type: string
       produces:
       - text/plain
@@ -437,11 +450,21 @@ paths:
       - Event
   /event/{name}/wait:
     get:
-      description: |-
-        - Wait for an event to be received or until `maxwait` milliseconds have passed
-        - Returns immediately if the event has already been sent
-        - If `maxwait` is negative, waits indefinitely.
-        - If `maxwait` is 0, returns immediately.
+      description: |
+        Wait for an event to be triggered.
+
+        ### Basic Operation
+        - Blocks until event is triggered or timeout
+        - Returns message from triggering client
+        - Returns 200 OK with message in body
+        - If `maxwait` is negative, waits indefinitely
+        - If `maxwait` is 0, returns immediately
+
+        ### Usage Tips
+        - Set reasonable `maxwait` to avoid indefinite blocking
+        - Check response body for event message
+        - Multiple clients can wait for same event
+        - All waiting clients receive same message
       parameters:
       - description: Event name
         in: path
@@ -456,7 +479,7 @@ paths:
       produces:
       - text/plain
       responses:
-        "204":
+        "200":
           description: Event signal received
           schema:
             type: string

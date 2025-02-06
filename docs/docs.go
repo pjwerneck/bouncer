@@ -384,7 +384,7 @@ const docTemplate = `{
         },
         "/event/{name}/send": {
             "get": {
-                "description": "- Send an event, triggering all waiting clients\n- Always returns immediately\n- If the event has already been sent, returns a ` + "`" + `409 Conflict` + "`" + ` error",
+                "description": "Triggers an event, sending a message to all waiting clients.\n\n### Basic Operation\n- Sends optional message to all waiting clients\n- Returns immediately\n- Can only be triggered once\n- Already triggered events return 409 Conflict\n\n### Usage Tips\n- Use meaningful messages for easier debugging\n- Empty message is allowed but not recommended\n- All waiting clients receive the same message\n",
                 "produces": [
                     "text/plain"
                 ],
@@ -399,6 +399,12 @@ const docTemplate = `{
                         "name": "name",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Event message",
+                        "name": "message",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -463,7 +469,7 @@ const docTemplate = `{
         },
         "/event/{name}/wait": {
             "get": {
-                "description": "- Wait for an event to be received or until ` + "`" + `maxwait` + "`" + ` milliseconds have passed\n- Returns immediately if the event has already been sent\n- If ` + "`" + `maxwait` + "`" + ` is negative, waits indefinitely.\n- If ` + "`" + `maxwait` + "`" + ` is 0, returns immediately.",
+                "description": "Wait for an event to be triggered.\n\n### Basic Operation\n- Blocks until event is triggered or timeout\n- Returns message from triggering client\n- Returns 200 OK with message in body\n- If ` + "`" + `maxwait` + "`" + ` is negative, waits indefinitely\n- If ` + "`" + `maxwait` + "`" + ` is 0, returns immediately\n\n### Usage Tips\n- Set reasonable ` + "`" + `maxwait` + "`" + ` to avoid indefinite blocking\n- Check response body for event message\n- Multiple clients can wait for same event\n- All waiting clients receive same message\n",
                 "produces": [
                     "text/plain"
                 ],
@@ -488,7 +494,7 @@ const docTemplate = `{
                     }
                 ],
                 "responses": {
-                    "204": {
+                    "200": {
                         "description": "Event signal received",
                         "schema": {
                             "type": "string"
