@@ -1,7 +1,7 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "A simple rate-limiting and synchronization service for distributed systems.\\n\\n",
+        "description": "A lightweight RPC service for distributed application control. Provides primitives for rate limiting, resource synchronization, and process coordination.\n\n### General Concepts\n- Endpoints use GET method with query parameters\n- Clients block until the operation is completed or `maxwait` is reached\n- Resources are created automatically on first use\n- All time values are in milliseconds\n- All numeric parameters are integers\n\n### Quick Tips\n- Test endpoints easily with `curl`, `ab` or your browser\n- Use `maxwait=0` to test resource availability without blocking\n- Monitor resource usage with the `/stats` endpoints\n- Check server readiness at `/.well-known/ready`\n\n### Status Codes\n- `204 No Content`: Operation completed successfully\n- `200 OK`: Operation completed with data returned\n- `408 Request Timeout`: The `maxwait` time was exceeded\n- `409 Conflict`: Operation conflicts with current state\n\n\n",
         "title": "Bouncer API",
         "contact": {},
         "license": {
@@ -543,7 +543,7 @@
         },
         "/semaphore/{name}/acquire": {
             "get": {
-                "description": "- Acquire a semaphore lock if available and returns a release `key`\n- Up to `size` locks can be acquired simultaneously.\n- If no lock is available, waits up to `maxwait` milliseconds for a lock to be released.\n- Locks are automatically released after `expires` milliseconds.\n- If `maxwait` is negative, waits indefinitely.\n- If `maxwait` is 0, returns immediately.",
+                "description": "A `semaphore` can be used to control concurrent access to shared resources.\n\n### Basic Operation\n- Up to `size` locks can be held simultaneously\n- Each acquire returns a unique release key\n- Waits up to `maxwait` milliseconds for an available lock\n- If `maxwait` is negative, waits indefinitely\n- If `maxwait` is 0, returns immediately\n\n### Usage Tips\n- Locks expire automatically after `expires` milliseconds\n- Set reasonable `expires` time to prevent orphaned locks\n- Use `size\u003e1` for resource pools\n",
                 "produces": [
                     "text/plain"
                 ],
@@ -611,7 +611,7 @@
         },
         "/semaphore/{name}/release": {
             "get": {
-                "description": "- The lock to be released is identified by the `key` returned when the lock was acquired\n- If the `key` is invalid or the lock is already released, a `409 Conflict` error is returned\n- If the lock is successfully released, a `204 No Content` response is returned",
+                "description": "Releases a previously acquired `semaphore` lock.\n\n### Basic Operation\n- Release using the key returned by acquire\n- Returns immediately\n- Invalid or already released keys return 409 Conflict\n",
                 "produces": [
                     "text/plain"
                 ],
@@ -729,7 +729,7 @@
         },
         "/tokenbucket/{name}/acquire": {
             "get": {
-                "description": "- Each `acquire` request consumes one token from the bucket.\n- If no token is available, waits up to `maxwait` milliseconds for a fresh token to be available.\n- Every `interval` milliseconds the bucket is refilled with `size` tokens.\n- If `maxwait` is negative, waits indefinitely.\n- If `maxwait` is 0, returns immediately.",
+                "description": "Rate limiting endpoint that implements the Token Bucket algorithm.\n\n### Basic Operation\n- Each request consumes one token\n- Bucket is refilled with `size` tokens every `interval` milliseconds\n- Waits up to `maxwait` milliseconds for available token\n- If `maxwait` is negative, waits indefinitely\n- If `maxwait` is 0, returns immediately\n\n### Usage Tips\n- For N operations per second, set `size=N` and `interval=1000`\n- For fractional rates, reduce the fraction:\n  - 10 ops/minute: use `size=1\u0026interval=6000`\n  - Not `size=10\u0026interval=60000` (causes long waits)\n- To prevent burst behavior (thundering herd):\n  - Reduce size and interval proportionally\n  - Example: `size=1\u0026interval=50` instead of `size=20\u0026interval=1000`\n  - Note: Very high rates with small intervals increase CPU load",
                 "produces": [
                     "text/plain"
                 ],
@@ -1157,31 +1157,31 @@
     },
     "tags": [
         {
-            "description": "rate limiter",
+            "description": "Rate limiting and traffic shaping",
             "name": "TokenBucket"
         },
         {
-            "description": "limit concurrent access",
+            "description": "Resource access control and concurrency limits",
             "name": "Semaphore"
         },
         {
-            "description": "wait until event arrives",
+            "description": "One-time broadcast notifications",
             "name": "Event"
         },
         {
-            "description": "wait until event stops arriving",
+            "description": "Process monitoring and failure detection",
             "name": "Watchdog"
         },
         {
-            "description": "distributed counter",
+            "description": "Distributed atomic counters",
             "name": "Counter"
         },
         {
-            "description": "wait until quorum is reached",
+            "description": "Multi-client synchronization points",
             "name": "Barrier"
         },
         {
-            "description": "service health checks",
+            "description": "Service health checks",
             "name": "Health"
         }
     ]

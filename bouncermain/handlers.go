@@ -2,24 +2,24 @@
 // @version 0.1.6
 // @license.name MIT
 // @license.url https://opensource.org/licenses/MIT
-// @description A simple rate-limiting and synchronization service for distributed systems.\n\n
+// @description.markdown
 // @host localhost:5505
 // @BasePath /
 
 // @tag.name TokenBucket
-// @tag.description rate limiter
+// @tag.description Rate limiting and traffic shaping
 // @tag.name Semaphore
-// @tag.description limit concurrent access
+// @tag.description Resource access control and concurrency limits
 // @tag.name Event
-// @tag.description wait until event arrives
+// @tag.description One-time broadcast notifications
 // @tag.name Watchdog
-// @tag.description wait until event stops arriving
+// @tag.description Process monitoring and failure detection
 // @tag.name Counter
-// @tag.description distributed counter
+// @tag.description Distributed atomic counters
 // @tag.name Barrier
-// @tag.description wait until quorum is reached
+// @tag.description Multi-client synchronization points
 // @tag.name Health
-// @tag.description service health checks
+// @tag.description Service health checks
 
 package bouncermain
 

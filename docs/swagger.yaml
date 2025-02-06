@@ -101,8 +101,29 @@ definitions:
 host: localhost:5505
 info:
   contact: {}
-  description: A simple rate-limiting and synchronization service for distributed
-    systems.\n\n
+  description: |+
+    A lightweight RPC service for distributed application control. Provides primitives for rate limiting, resource synchronization, and process coordination.
+
+    ### General Concepts
+    - Endpoints use GET method with query parameters
+    - Clients block until the operation is completed or `maxwait` is reached
+    - Resources are created automatically on first use
+    - All time values are in milliseconds
+    - All numeric parameters are integers
+
+    ### Quick Tips
+    - Test endpoints easily with `curl`, `ab` or your browser
+    - Use `maxwait=0` to test resource availability without blocking
+    - Monitor resource usage with the `/stats` endpoints
+    - Check server readiness at `/.well-known/ready`
+
+    ### Status Codes
+    - `204 No Content`: Operation completed successfully
+    - `200 OK`: Operation completed with data returned
+    - `408 Request Timeout`: The `maxwait` time was exceeded
+    - `409 Conflict`: Operation conflicts with current state
+
+
   license:
     name: MIT
     url: https://opensource.org/licenses/MIT
@@ -477,13 +498,20 @@ paths:
       - Semaphore
   /semaphore/{name}/acquire:
     get:
-      description: |-
-        - Acquire a semaphore lock if available and returns a release `key`
-        - Up to `size` locks can be acquired simultaneously.
-        - If no lock is available, waits up to `maxwait` milliseconds for a lock to be released.
-        - Locks are automatically released after `expires` milliseconds.
-        - If `maxwait` is negative, waits indefinitely.
-        - If `maxwait` is 0, returns immediately.
+      description: |
+        A `semaphore` can be used to control concurrent access to shared resources.
+
+        ### Basic Operation
+        - Up to `size` locks can be held simultaneously
+        - Each acquire returns a unique release key
+        - Waits up to `maxwait` milliseconds for an available lock
+        - If `maxwait` is negative, waits indefinitely
+        - If `maxwait` is 0, returns immediately
+
+        ### Usage Tips
+        - Locks expire automatically after `expires` milliseconds
+        - Set reasonable `expires` time to prevent orphaned locks
+        - Use `size>1` for resource pools
       parameters:
       - description: Semaphore name
         in: path
@@ -529,10 +557,13 @@ paths:
       - Semaphore
   /semaphore/{name}/release:
     get:
-      description: |-
-        - The lock to be released is identified by the `key` returned when the lock was acquired
-        - If the `key` is invalid or the lock is already released, a `409 Conflict` error is returned
-        - If the lock is successfully released, a `204 No Content` response is returned
+      description: |
+        Releases a previously acquired `semaphore` lock.
+
+        ### Basic Operation
+        - Release using the key returned by acquire
+        - Returns immediately
+        - Invalid or already released keys return 409 Conflict
       parameters:
       - description: Semaphore name
         in: path
@@ -611,11 +642,24 @@ paths:
   /tokenbucket/{name}/acquire:
     get:
       description: |-
-        - Each `acquire` request consumes one token from the bucket.
-        - If no token is available, waits up to `maxwait` milliseconds for a fresh token to be available.
-        - Every `interval` milliseconds the bucket is refilled with `size` tokens.
-        - If `maxwait` is negative, waits indefinitely.
-        - If `maxwait` is 0, returns immediately.
+        Rate limiting endpoint that implements the Token Bucket algorithm.
+
+        ### Basic Operation
+        - Each request consumes one token
+        - Bucket is refilled with `size` tokens every `interval` milliseconds
+        - Waits up to `maxwait` milliseconds for available token
+        - If `maxwait` is negative, waits indefinitely
+        - If `maxwait` is 0, returns immediately
+
+        ### Usage Tips
+        - For N operations per second, set `size=N` and `interval=1000`
+        - For fractional rates, reduce the fraction:
+          - 10 ops/minute: use `size=1&interval=6000`
+          - Not `size=10&interval=60000` (causes long waits)
+        - To prevent burst behavior (thundering herd):
+          - Reduce size and interval proportionally
+          - Example: `size=1&interval=50` instead of `size=20&interval=1000`
+          - Note: Very high rates with small intervals increase CPU load
       parameters:
       - description: Token bucket name
         in: path
@@ -806,17 +850,17 @@ paths:
       - Watchdog
 swagger: "2.0"
 tags:
-- description: rate limiter
+- description: Rate limiting and traffic shaping
   name: TokenBucket
-- description: limit concurrent access
+- description: Resource access control and concurrency limits
   name: Semaphore
-- description: wait until event arrives
+- description: One-time broadcast notifications
   name: Event
-- description: wait until event stops arriving
+- description: Process monitoring and failure detection
   name: Watchdog
-- description: distributed counter
+- description: Distributed atomic counters
   name: Counter
-- description: wait until quorum is reached
+- description: Multi-client synchronization points
   name: Barrier
-- description: service health checks
+- description: Service health checks
   name: Health

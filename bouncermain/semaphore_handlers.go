@@ -41,12 +41,7 @@ func (r *SemaphoreReleaseRequest) Decode(values url.Values) error {
 
 // SemaphoreAcquireHandler godoc
 // @Summary Acquire a semaphore
-// @Description - Acquire a semaphore lock if available and returns a release `key`
-// @Description - Up to `size` locks can be acquired simultaneously.
-// @Description - If no lock is available, waits up to `maxwait` milliseconds for a lock to be released.
-// @Description - Locks are automatically released after `expires` milliseconds.
-// @Description - If `maxwait` is negative, waits indefinitely.
-// @Description - If `maxwait` is 0, returns immediately.
+// @description.markdown semaphore_acquire.md
 // @Tags Semaphore
 // @Produce plain
 // @Param name path string true "Semaphore name"
@@ -81,9 +76,7 @@ func SemaphoreAcquireHandler(w http.ResponseWriter, r *http.Request, ps httprout
 
 // SemaphoreReleaseHandler godoc
 // @Summary Release a semaphore
-// @Description - The lock to be released is identified by the `key` returned when the lock was acquired
-// @Description - If the `key` is invalid or the lock is already released, a `409 Conflict` error is returned
-// @Description - If the lock is successfully released, a `204 No Content` response is returned
+// @description.markdown semaphore_release.md
 // @Tags Semaphore
 // @Produce plain
 // @Param name path string true "Semaphore name"

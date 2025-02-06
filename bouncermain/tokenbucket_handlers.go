@@ -31,11 +31,7 @@ func (r *TokenBucketAcquireRequest) Decode(values url.Values) error {
 
 // TokenBucketAcquireHandler godoc
 // @Summary Acquire a token from a token bucket
-// @Description - Each `acquire` request consumes one token from the bucket.
-// @Description - If no token is available, waits up to `maxwait` milliseconds for a fresh token to be available.
-// @Description - Every `interval` milliseconds the bucket is refilled with `size` tokens.
-// @Description - If `maxwait` is negative, waits indefinitely.
-// @Description - If `maxwait` is 0, returns immediately.
+// @description.markdown tokenbucket_acquire.md
 // @Tags TokenBucket
 // @Produce plain
 // @Param name path string true "Token bucket name"
