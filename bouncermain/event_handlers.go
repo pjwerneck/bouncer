@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/rs/zerolog/log"
 )
 
 // Event handler requests
@@ -82,15 +81,7 @@ func EventWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 			rep.Status = http.StatusOK
 		}
 
-		log.Info().
-			Str("status", logStatus).
-			Str("type", "event").
-			Str("call", "wait").
-			Str("name", ps[0].Value).
-			Int64("maxwait", req.MaxWait.Milliseconds()).
-			Int64("wait", wait.Milliseconds()).
-			Str("id", req.ID).
-			Send()
+		logRequest(logStatus, "event", "wait", ps[0].Value, wait, req).Send()
 	}
 
 	rep.WriteResponse(w, r, err)
@@ -129,19 +120,13 @@ func EventSendHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 
 		if errors.Is(err, ErrEventClosed) {
 			logStatus = "closed"
+			rep.Status = http.StatusConflict
 		} else if err == nil {
 			rep.Status = http.StatusNoContent
 		}
 
-		log.Info().
-			Str("status", logStatus).
-			Str("type", "event").
-			Str("call", "send").
-			Str("name", ps[0].Value).
-			Str("message", req.Message).
-			Int64("wait", wait.Milliseconds()).
-			Str("id", req.ID).
-			Send()
+		logRequest(logStatus, "event", "send", ps[0].Value, wait, req).Send()
+
 	}
 
 	rep.WriteResponse(w, r, err)
@@ -157,7 +142,8 @@ func EventSendHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 // @Failure 404 {string} Reply "Not Found - event not found"
 // @Router /event/{name} [delete]
 func EventDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	DeleteHandler(w, r, ps, deleteEvent)
+	res := DeleteHandler(w, r, ps, deleteEvent)
+	logRequest(res, "event", "delete", ps[0].Value, 0, nil).Send()
 }
 
 // EventStatsHandler godoc
@@ -170,5 +156,6 @@ func EventDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 // @Failure 404 {string} Reply "Not Found - event not found"
 // @Router /event/{name}/stats [get]
 func EventStatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	StatsHandler(w, r, ps, getEventStats)
+	res := StatsHandler(w, r, ps, getEventStats)
+	logRequest(res, "event", "stats", ps[0].Value, 0, nil).Send()
 }

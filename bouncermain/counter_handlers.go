@@ -6,7 +6,6 @@ import (
 	"net/url"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/rs/zerolog/log"
 )
 
 // Counter handler requests
@@ -69,19 +68,10 @@ func CounterCountHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 
 	if err == nil {
 		value := counter.Count(req.Amount)
-
-		log.Info().
-			Str("status", "success").
-			Str("type", "counter").
-			Str("call", "count").
-			Str("name", ps[0].Value).
-			Int64("amount", req.Amount).
-			Int64("value", value).
-			Str("id", req.ID).
-			Send()
-
 		rep.Body = fmt.Sprintf("%d", value)
 		rep.Status = http.StatusOK
+
+		logRequest("success", "counter", "count", ps[0].Value, 0, req).Send()
 	}
 
 	rep.WriteResponse(w, r, err)
@@ -113,17 +103,8 @@ func CounterResetHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 
 	if err == nil {
 		counter.Reset(req.Value)
-
-		log.Info().
-			Str("status", "success").
-			Str("type", "counter").
-			Str("call", "reset").
-			Str("name", ps[0].Value).
-			Int64("value", req.Value).
-			Str("id", req.ID).
-			Send()
-
 		rep.Status = http.StatusNoContent
+		logRequest("success", "counter", "reset", ps[0].Value, 0, req).Send()
 	}
 
 	rep.WriteResponse(w, r, err)
@@ -149,6 +130,7 @@ func CounterValueHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		value := counter.Value()
 		rep.Body = fmt.Sprintf("%d", value)
 		rep.Status = http.StatusOK
+		logRequest("success", "counter", "value", ps[0].Value, 0, nil).Send()
 	}
 
 	rep.WriteResponse(w, r, err)
@@ -164,7 +146,8 @@ func CounterValueHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 // @Failure 404 {string} Reply "Not Found - counter not found"
 // @Router /counter/{name} [delete]
 func CounterDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	DeleteHandler(w, r, ps, deleteCounter)
+	res := DeleteHandler(w, r, ps, deleteCounter)
+	logRequest(res, "counter", "delete", ps[0].Value, 0, nil).Send()
 }
 
 // CounterStatsHandler godoc
@@ -177,5 +160,6 @@ func CounterDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.
 // @Failure 404 {string} Reply "Not Found - counter not found"
 // @Router /counter/{name}/stats [get]
 func CounterStatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	StatsHandler(w, r, ps, getCounterStats)
+	res := StatsHandler(w, r, ps, getCounterStats)
+	logRequest(res, "counter", "stats", ps[0].Value, 0, nil).Send()
 }

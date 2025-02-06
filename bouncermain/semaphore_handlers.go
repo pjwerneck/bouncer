@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/rs/zerolog/log"
 )
 
 type SemaphoreAcquireRequest struct {
@@ -83,17 +82,8 @@ func SemaphoreAcquireHandler(w http.ResponseWriter, r *http.Request, ps httprout
 		} else if err == nil {
 			rep.Status = http.StatusOK
 		}
-		log.Info().
-			Str("status", logStatus).
-			Str("type", "semaphore").
-			Str("call", "acquire").
-			Str("name", ps[0].Value).
-			Uint64("size", req.Size).
-			Int64("expires", req.Expires.Milliseconds()).
-			Int64("maxwait", req.MaxWait.Milliseconds()).
-			Int64("wait", wait.Milliseconds()).
-			Str("id", req.ID).
-			Send()
+
+		logRequest(logStatus, "semaphore", "acquire", ps[0].Value, wait, req).Send()
 
 	}
 
@@ -133,19 +123,13 @@ func SemaphoreReleaseHandler(w http.ResponseWriter, r *http.Request, ps httprout
 
 		if errors.Is(err, ErrKeyError) {
 			logStatus = "conflict"
+			rep.Status = http.StatusConflict
 		} else if err == nil {
-			rep.Status = http.StatusOK
+			rep.Status = http.StatusNoContent
 		}
-		log.Info().
-			Str("status", logStatus).
-			Str("type", "semaphore").
-			Str("call", "release").
-			Str("name", ps[0].Value).
-			Int64("wait", wait.Milliseconds()).
-			Str("id", req.ID).
-			Send()
 
-		rep.Status = http.StatusNoContent
+		logRequest(logStatus, "semaphore", "release", ps[0].Value, wait, req).Send()
+
 	}
 
 	rep.WriteResponse(w, r, err)
@@ -161,7 +145,8 @@ func SemaphoreReleaseHandler(w http.ResponseWriter, r *http.Request, ps httprout
 // @Failure 404 {string} Reply "Not Found - semaphore not found"
 // @Router /semaphore/{name} [delete]
 func SemaphoreDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	DeleteHandler(w, r, ps, deleteSemaphore)
+	res := DeleteHandler(w, r, ps, deleteSemaphore)
+	logRequest(res, "semaphore", "delete", ps[0].Value, 0, nil).Send()
 }
 
 // SemaphoreStatsHandler godoc
@@ -174,5 +159,6 @@ func SemaphoreDeleteHandler(w http.ResponseWriter, r *http.Request, ps httproute
 // @Failure 404 {string} Reply "Not Found - semaphore not found"
 // @Router /semaphore/{name}/stats [get]
 func SemaphoreStatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	StatsHandler(w, r, ps, getSemaphoreStats)
+	res := StatsHandler(w, r, ps, getSemaphoreStats)
+	logRequest(res, "semaphore", "stats", ps[0].Value, 0, nil).Send()
 }

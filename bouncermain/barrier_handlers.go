@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/rs/zerolog/log"
 )
 
 type BarrierWaitRequest struct {
@@ -69,16 +68,7 @@ func BarrierWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 			rep.Status = http.StatusNoContent
 		}
 
-		log.Info().
-			Str("status", logStatus).
-			Str("type", "barrier").
-			Str("call", "wait").
-			Str("name", ps[0].Value).
-			Uint64("size", req.Size).
-			Int64("maxwait", req.MaxWait.Milliseconds()).
-			Int64("wait", wait.Milliseconds()).
-			Str("id", req.ID).
-			Send()
+		logRequest(logStatus, "barrier", "wait", ps[0].Value, wait, req).Send()
 	}
 
 	rep.WriteResponse(w, r, err)

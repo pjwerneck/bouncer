@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/rs/zerolog/log"
 )
 
 type TokenBucketAcquireRequest struct {
@@ -71,17 +70,8 @@ func TokenBucketAcquireHandler(w http.ResponseWriter, r *http.Request, ps httpro
 		} else if err == nil {
 			rep.Status = http.StatusNoContent
 		}
-		log.Info().
-			Str("status", logStatus).
-			Str("type", "tokenbucket").
-			Str("call", "acquire").
-			Str("name", ps[0].Value).
-			Uint64("size", req.Size).
-			Int64("interval", req.Interval.Milliseconds()).
-			Int64("maxwait", req.MaxWait.Milliseconds()).
-			Int64("wait", wait.Milliseconds()).
-			Str("id", req.ID).
-			Send()
+
+		logRequest(logStatus, "tokenbucket", "acquire", ps[0].Value, wait, req).Send()
 
 	}
 
@@ -98,7 +88,8 @@ func TokenBucketAcquireHandler(w http.ResponseWriter, r *http.Request, ps httpro
 // @Failure 404 {string} Reply "Not Found - token bucket not found"
 // @Router /tokenbucket/{name} [delete]
 func TokenBucketDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	DeleteHandler(w, r, ps, deleteTokenBucket)
+	res := DeleteHandler(w, r, ps, deleteTokenBucket)
+	logRequest(res, "tokenbucket", "delete", ps[0].Value, 0, nil).Send()
 }
 
 // TokenBucketStatsHandler godoc
@@ -112,5 +103,6 @@ func TokenBucketDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprou
 // @Failure 404 {string} Reply "Not Found - token bucket not found"
 // @Router /tokenbucket/{name}/stats [get]
 func TokenBucketStatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	StatsHandler(w, r, ps, getTokenBucketStats)
+	res := StatsHandler(w, r, ps, getTokenBucketStats)
+	logRequest(res, "tokenbucket", "stats", ps[0].Value, 0, nil).Send()
 }

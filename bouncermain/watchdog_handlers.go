@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/rs/zerolog/log"
 )
 
 type WatchdogWaitRequest struct {
@@ -80,15 +79,8 @@ func WatchdogWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 			rep.Status = http.StatusNoContent
 		}
 
-		log.Info().
-			Str("status", logStatus).
-			Str("type", "watchdog").
-			Str("call", "wait").
-			Str("name", ps[0].Value).
-			Int64("maxwait", req.MaxWait.Milliseconds()).
-			Int64("wait", wait.Milliseconds()).
-			Str("id", req.ID).
-			Send()
+		logRequest(logStatus, "watchdog", "wait", ps[0].Value, wait, req).Send()
+
 	}
 
 	rep.WriteResponse(w, r, err)
@@ -128,15 +120,8 @@ func WatchdogKickHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 			rep.Status = http.StatusNoContent
 		}
 
-		log.Info().
-			Str("status", logStatus).
-			Str("type", "watchdog").
-			Str("call", "kick").
-			Str("name", ps[0].Value).
-			Int64("expires", req.Expires.Milliseconds()).
-			Int64("wait", wait.Milliseconds()).
-			Str("id", req.ID).
-			Send()
+		logRequest(logStatus, "watchdog", "kick", ps[0].Value, wait, req).Send()
+
 	}
 
 	rep.WriteResponse(w, r, err)
@@ -152,7 +137,8 @@ func WatchdogKickHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 // @Failure 404 {string} Reply "Not Found - watchdog not found"
 // @Router /watchdog/{name} [delete]
 func WatchdogDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	DeleteHandler(w, r, ps, deleteWatchdog)
+	res := DeleteHandler(w, r, ps, deleteWatchdog)
+	logRequest(res, "watchdog", "delete", ps[0].Value, 0, nil).Send()
 }
 
 // WatchdogStatsHandler godoc
@@ -165,5 +151,6 @@ func WatchdogDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter
 // @Failure 404 {string} Reply "Not Found - watchdog not found"
 // @Router /watchdog/{name}/stats [get]
 func WatchdogStatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	StatsHandler(w, r, ps, getWatchdogStats)
+	res := StatsHandler(w, r, ps, getWatchdogStats)
+	logRequest(res, "watchdog", "stats", ps[0].Value, 0, nil).Send()
 }
