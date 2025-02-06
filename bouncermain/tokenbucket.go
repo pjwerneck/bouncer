@@ -4,6 +4,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/rs/zerolog/log"
 )
 
 const maxSleepDuration = 5 * time.Second
@@ -50,11 +52,18 @@ func getTokenBucket(name string, size uint64, interval time.Duration) (bucket *T
 	bucketsMutex.RUnlock()
 
 	if ok {
-		// Check if we need to update settings
 		bucket.mu.RLock()
 		currentSize := bucket.Size
 		currentInterval := bucket.interval
 		bucket.mu.RUnlock()
+
+		if size != currentSize {
+			log.Warn().
+				Str("name", name).
+				Uint64("current_size", currentSize).
+				Uint64("new_size", size).
+				Msg("tokenbucket size modification through acquire is deprecated and will be removed in a future version")
+		}
 
 		if size != currentSize || interval != currentInterval {
 			bucket.mu.Lock()

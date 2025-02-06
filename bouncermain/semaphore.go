@@ -62,6 +62,12 @@ func getSemaphore(name string, size uint64) (semaphore *Semaphore, err error) {
 		semaphore.mu.RUnlock()
 
 		if size != currentSize {
+			log.Warn().
+				Str("name", name).
+				Uint64("current_size", currentSize).
+				Uint64("new_size", size).
+				Msg("semaphore size modification through acquire is deprecated and will be removed in a future version")
+
 			semaphore.mu.Lock()
 			semaphore.Size = size
 			semaphore.mu.Unlock()
