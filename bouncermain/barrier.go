@@ -136,6 +136,7 @@ func deleteBarrier(name string) error {
 		return ErrNotFound
 	}
 
+	// Close barrier channel and remove from map
 	barrier.mu.Lock()
 	if !barrier.done {
 		close(barrier.waitC)

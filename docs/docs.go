@@ -1197,9 +1197,6 @@ const docTemplate = `{
         "bouncermain.WatchdogStats": {
             "type": "object",
             "properties": {
-                "average_wait_time": {
-                    "type": "number"
-                },
                 "created_at": {
                     "type": "string"
                 },
@@ -1210,12 +1207,6 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "timed_out": {
-                    "type": "integer"
-                },
-                "total_wait_time": {
-                    "type": "integer"
-                },
-                "triggered": {
                     "type": "integer"
                 },
                 "waited": {

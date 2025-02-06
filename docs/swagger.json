@@ -1191,9 +1191,6 @@
         "bouncermain.WatchdogStats": {
             "type": "object",
             "properties": {
-                "average_wait_time": {
-                    "type": "number"
-                },
                 "created_at": {
                     "type": "string"
                 },
@@ -1204,12 +1201,6 @@
                     "type": "string"
                 },
                 "timed_out": {
-                    "type": "integer"
-                },
-                "total_wait_time": {
-                    "type": "integer"
-                },
-                "triggered": {
                     "type": "integer"
                 },
                 "waited": {

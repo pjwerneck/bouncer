@@ -7,94 +7,71 @@ import (
 )
 
 type WatchdogStats struct {
-	Waited          uint64  `json:"waited"`
-	TimedOut        uint64  `json:"timed_out"`
-	Kicks           uint64  `json:"kicks"`
-	Triggered       uint64  `json:"triggered"`
-	TotalWaitTime   uint64  `json:"total_wait_time"`
-	AverageWaitTime float64 `json:"average_wait_time"`
-	LastKick        string  `json:"last_kick"`
-	CreatedAt       string  `json:"created_at"`
+	Waited    uint64 `json:"waited"`
+	TimedOut  uint64 `json:"timed_out"`
+	Kicks     uint64 `json:"kicks"`
+	LastKick  string `json:"last_kick"`
+	CreatedAt string `json:"created_at"`
 }
 
 type Watchdog struct {
 	Name    string
-	timer   *time.Timer
-	mu      *sync.Mutex
-	waitC   chan bool
-	stopC   chan bool
-	doneC   chan bool // New channel to signal goroutine completion
-	expired bool
 	Stats   *WatchdogStats
+	expires int64 // atomic unix nano when watchdog expires
 }
 
 var watchdogs = map[string]*Watchdog{}
 var watchdogsMutex = &sync.RWMutex{}
 
-func newWatchdog(name string, expires time.Duration) (watchdog *Watchdog) {
-	watchdog = &Watchdog{
-		Name:  name,
-		timer: time.NewTimer(expires),
-		mu:    &sync.Mutex{},
-		waitC: make(chan bool),
-		stopC: make(chan bool),
-		doneC: make(chan bool),
-		Stats: &WatchdogStats{CreatedAt: time.Now().Format(time.RFC3339)},
+func newWatchdog(name string, expires time.Duration) *Watchdog {
+	now := time.Now()
+	watchdog := &Watchdog{
+		Name:    name,
+		Stats:   &WatchdogStats{CreatedAt: now.Format(time.RFC3339)},
+		expires: now.Add(expires).UnixNano(),
 	}
-
 	watchdogs[name] = watchdog
-	go watchdog.watch()
 	return watchdog
 }
 
-func (watchdog *Watchdog) watch() {
-	defer func() {
-		watchdog.doneC <- true // Signal completion
-	}()
-
-	for {
-		select {
-		case <-watchdog.timer.C:
-			watchdog.mu.Lock()
-			if !watchdog.expired {
-				watchdog.expired = true
-				close(watchdog.waitC)
-				watchdog.waitC = make(chan bool)
-			}
-			watchdog.mu.Unlock()
-		case <-watchdog.stopC:
-			return
-		}
-	}
+func (w *Watchdog) Kick(expires time.Duration) error {
+	atomic.StoreInt64(&w.expires, time.Now().Add(expires).UnixNano())
+	atomic.AddUint64(&w.Stats.Kicks, 1)
+	w.Stats.LastKick = time.Now().Format(time.RFC3339)
+	return nil
 }
 
-func (watchdog *Watchdog) reset(expires time.Duration) {
-	watchdog.mu.Lock()
-	defer watchdog.mu.Unlock()
+func (w *Watchdog) Wait(maxwait time.Duration) error {
+	deadline := time.Now().Add(maxwait)
 
-	// Stop existing watch goroutine and wait for completion
-	close(watchdog.stopC)
-	<-watchdog.doneC
-
-	// Stop and drain timer
-	if !watchdog.timer.Stop() {
-		select {
-		case <-watchdog.timer.C:
-		default:
-		}
+	// Check if already expired
+	if time.Now().UnixNano() >= atomic.LoadInt64(&w.expires) {
+		atomic.AddUint64(&w.Stats.Waited, 1)
+		return nil
 	}
 
-	// Reset all channels and state
-	watchdog.stopC = make(chan bool)
-	watchdog.doneC = make(chan bool)
-	watchdog.waitC = make(chan bool)
-	watchdog.expired = false
+	for {
+		// Check timeout
+		if maxwait >= 0 && time.Now().After(deadline) {
+			atomic.AddUint64(&w.Stats.TimedOut, 1)
+			return ErrTimedOut
+		}
 
-	// Reset timer
-	watchdog.timer.Reset(expires)
+		// Check expiration
+		if time.Now().UnixNano() >= atomic.LoadInt64(&w.expires) {
+			atomic.AddUint64(&w.Stats.Waited, 1)
+			return nil
+		}
 
-	// Start new watch goroutine
-	go watchdog.watch()
+		// Sleep until next check or deadline
+		now := time.Now()
+		sleepUntil := time.Unix(0, atomic.LoadInt64(&w.expires))
+		if maxwait >= 0 && deadline.Before(sleepUntil) {
+			sleepUntil = deadline
+		}
+
+		time.Sleep(min(sleepUntil.Sub(now), maxSleepDuration))
+	}
 }
 
 func getWatchdog(name string, expires time.Duration) (watchdog *Watchdog, err error) {
@@ -120,58 +97,16 @@ func getWatchdog(name string, expires time.Duration) (watchdog *Watchdog, err er
 	return watchdog, err
 }
 
-func (watchdog *Watchdog) Kick(expires time.Duration) error {
-	watchdog.reset(expires)
-	atomic.AddUint64(&watchdog.Stats.Kicks, 1)
-	watchdog.Stats.LastKick = time.Now().Format(time.RFC3339)
-	return nil
-}
-
-func (watchdog *Watchdog) Wait(maxwait time.Duration) error {
-	started := time.Now()
-	watchdog.mu.Lock()
-	ch := watchdog.waitC // Get current channel
-	expired := watchdog.expired
-	watchdog.mu.Unlock()
-
-	if expired {
-		atomic.AddUint64(&watchdog.Stats.Waited, 1)
-		atomic.AddUint64(&watchdog.Stats.Triggered, 1)
-		return nil // Return immediately if already expired
-	}
-
-	// Use RecvTimeout for consistent timeout handling across primitives
-	_, err := RecvTimeout(ch, maxwait)
-	if err != nil {
-		atomic.AddUint64(&watchdog.Stats.TimedOut, 1)
-		return err
-	}
-
-	// Update stats
-	wait := uint64(time.Since(started) / time.Millisecond)
-	atomic.AddUint64(&watchdog.Stats.Waited, 1)
-	atomic.AddUint64(&watchdog.Stats.TotalWaitTime, wait)
-	atomic.AddUint64(&watchdog.Stats.Triggered, 1)
-
-	return nil
-}
-
 func getWatchdogStats(name string) (stats *WatchdogStats, err error) {
-	watchdogsMutex.Lock()
-	defer watchdogsMutex.Unlock()
+	watchdogsMutex.RLock()
+	defer watchdogsMutex.RUnlock()
 
 	watchdog, ok := watchdogs[name]
 	if !ok {
 		return nil, ErrNotFound
 	}
 
-	// Create a copy and calculate average
-	stats = &WatchdogStats{}
-	*stats = *watchdog.Stats
-	waited := atomic.LoadUint64(&watchdog.Stats.Waited)
-	if waited > 0 {
-		stats.AverageWaitTime = float64(atomic.LoadUint64(&watchdog.Stats.TotalWaitTime)) / float64(waited)
-	}
+	stats = watchdog.Stats
 
 	return stats, nil
 }
@@ -180,14 +115,10 @@ func deleteWatchdog(name string) error {
 	watchdogsMutex.Lock()
 	defer watchdogsMutex.Unlock()
 
-	watchdog, ok := watchdogs[name]
+	_, ok := watchdogs[name]
 	if !ok {
 		return ErrNotFound
 	}
-
-	// Stop the watch goroutine
-	close(watchdog.stopC)
-	<-watchdog.doneC
 
 	delete(watchdogs, name)
 	return nil
