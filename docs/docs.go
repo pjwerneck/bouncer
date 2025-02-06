@@ -105,7 +105,7 @@ const docTemplate = `{
         },
         "/barrier/{name}/wait": {
             "get": {
-                "description": "- Wait until ` + "`" + `size` + "`" + ` parties have arrived or until ` + "`" + `maxwait` + "`" + ` milliseconds have passed.\n- Returns ` + "`" + `409 Conflict` + "`" + ` immediately if ` + "`" + `size` + "`" + ` parties have already arrived.\n- If ` + "`" + `maxwait` + "`" + ` is negative, waits indefinitely.\n- If ` + "`" + `maxwait` + "`" + ` is 0, returns immediately.",
+                "description": "Synchronize multiple clients at a common barrier point.\n\n### Basic Operation\n- Blocks until ` + "`" + `size` + "`" + ` clients reach the barrier\n- Returns 204 No Content when barrier triggers\n- Returns 408 Request Timeout on ` + "`" + `maxwait` + "`" + `\n- Returns 409 Conflict if barrier already triggered\n- If ` + "`" + `maxwait` + "`" + ` is negative, waits indefinitely\n- If ` + "`" + `maxwait` + "`" + ` is 0, returns immediately\n\n### Usage Tips\n- Default size is 2 clients\n- All waiting clients are released simultaneously\n- Use for multi-party synchronization\n- Consider network latency when setting timeouts\n- Barriers cannot be reused after triggering\n",
                 "produces": [
                     "text/plain"
                 ],
@@ -189,7 +189,7 @@ const docTemplate = `{
         },
         "/counter/{name}/count": {
             "get": {
-                "description": "- Atomically adds ` + "`" + `amount` + "`" + ` to counter value\n- If ` + "`" + `amount` + "`" + ` is negative, decrements the counter\n- Returns the new counter value",
+                "description": "Atomically increment or decrement a distributed counter.\n\n### Basic Operation\n- Adds ` + "`" + `amount` + "`" + ` to counter value atomically\n- Returns new counter value\n- Negative ` + "`" + `amount` + "`" + ` decrements the counter\n- Default ` + "`" + `amount` + "`" + ` is 1\n\n### Usage Tips\n- Use for distributed counting/statistics\n- Safe for concurrent access\n- Combine with monitoring for thresholds\n- Values are 64-bit signed integers\n",
                 "produces": [
                     "text/plain"
                 ],
@@ -237,7 +237,7 @@ const docTemplate = `{
         },
         "/counter/{name}/reset": {
             "get": {
-                "description": "- Reset counter to specified value\n- If ` + "`" + `value` + "`" + ` is not provided, resets counter to 0\n- Returns 204 No Content on success",
+                "description": "Reset counter to specified value.\n\n### Basic Operation\n- Sets counter to specified ` + "`" + `value` + "`" + `\n- Returns 204 No Content on success\n- Default ` + "`" + `value` + "`" + ` is 0\n- Operation is atomic\n\n### Usage Tips\n- Use for periodic resets\n- Useful for time-based metrics\n- Consider using delete instead of reset\n- All clients see new value immediately\n",
                 "produces": [
                     "text/plain"
                 ],
@@ -317,7 +317,7 @@ const docTemplate = `{
         },
         "/counter/{name}/value": {
             "get": {
-                "description": "- Returns current counter value",
+                "description": "Get current counter value.\n\n### Basic Operation\n- Returns current counter value\n- Value is returned as plain text\n- Operation is atomic\n- Returns 200 OK with value\n\n### Usage Tips\n- Use for monitoring/metrics collection\n- Values are consistent across all clients\n",
                 "produces": [
                     "text/plain"
                 ],
@@ -885,7 +885,7 @@ const docTemplate = `{
         },
         "/watchdog/{name}/kick": {
             "get": {
-                "description": "- Reset the watchdog expiration timer, keeping all clients on ` + "`" + `wait` + "`" + ` requests waiting.\n- The watchdog will expire in ` + "`" + `expires` + "`" + ` milliseconds unless kicked again\n- If ` + "`" + `expires` + "`" + ` is 0 or negative, the watchdog will expire immediately",
+                "description": "Reset watchdog timer to prevent expiration notification.\n\n### Basic Operation\n- Resets expiration timer to ` + "`" + `expires` + "`" + ` milliseconds\n- Returns immediately with 204 No Content\n- Zero or negative ` + "`" + `expires` + "`" + ` triggers immediate expiration\n- Default ` + "`" + `expires` + "`" + ` is 60000 (one minute)\n\n### Usage Tips\n- Kick frequently enough to prevent false alarms\n- Set ` + "`" + `expires` + "`" + ` longer than maximum task interval\n- Consider network latency when setting intervals\n- Kick before heavy operations, not after\n",
                 "produces": [
                     "text/plain"
                 ],
@@ -965,7 +965,7 @@ const docTemplate = `{
         },
         "/watchdog/{name}/wait": {
             "get": {
-                "description": "- Wait for a watchdog to expire or until ` + "`" + `maxwait` + "`" + ` milliseconds have passed\n- Each ` + "`" + `kick` + "`" + ` request resets the watchdog expiration timer.\n- Return immediately if the watchdog has already expired\n- If ` + "`" + `maxwait` + "`" + ` is negative, waits indefinitely.\n- If ` + "`" + `maxwait` + "`" + ` is 0, returns immediately.",
+                "description": "Monitor a periodic task by waiting for its watchdog to expire.\n\n### Basic Operation\n- Blocks until watchdog expires or timeout occurs\n- Returns 204 No Content when watchdog expires\n- Returns 408 Request Timeout on ` + "`" + `maxwait` + "`" + `\n- If ` + "`" + `maxwait` + "`" + ` is negative, waits indefinitely\n- If ` + "`" + `maxwait` + "`" + ` is 0, returns immediately\n\n### Usage Tips\n- Multiple clients can monitor same watchdog\n- All waiting clients are notified on expiration\n- Use reasonable ` + "`" + `maxwait` + "`" + ` for monitoring tasks\n- Combine with alerts/monitoring systems\n",
                 "produces": [
                     "text/plain"
                 ],

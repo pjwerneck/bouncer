@@ -39,11 +39,7 @@ func (r *WatchdogKickRequest) Decode(values url.Values) error {
 
 // WatchdogWaitHandler godoc
 // @Summary Wait for watchdog expiration
-// @Description - Wait for a watchdog to expire or until `maxwait` milliseconds have passed
-// @Description - Each `kick` request resets the watchdog expiration timer.
-// @Description - Return immediately if the watchdog has already expired
-// @Description - If `maxwait` is negative, waits indefinitely.
-// @Description - If `maxwait` is 0, returns immediately.
+// @Description.markdown watchdog_wait.md
 // @Tags Watchdog
 // @Produce plain
 // @Param name path string true "Watchdog name"
@@ -75,9 +71,7 @@ func WatchdogWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 
 // WatchdogKickHandler godoc
 // @Summary Reset watchdog timer
-// @Description - Reset the watchdog expiration timer, keeping all clients on `wait` requests waiting.
-// @Description - The watchdog will expire in `expires` milliseconds unless kicked again
-// @Description - If `expires` is 0 or negative, the watchdog will expire immediately
+// @Description.markdown watchdog_kick.md
 // @Tags Watchdog
 // @Produce plain
 // @Param name path string true "Watchdog name"

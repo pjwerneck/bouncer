@@ -187,11 +187,23 @@ paths:
       - Barrier
   /barrier/{name}/wait:
     get:
-      description: |-
-        - Wait until `size` parties have arrived or until `maxwait` milliseconds have passed.
-        - Returns `409 Conflict` immediately if `size` parties have already arrived.
-        - If `maxwait` is negative, waits indefinitely.
-        - If `maxwait` is 0, returns immediately.
+      description: |
+        Synchronize multiple clients at a common barrier point.
+
+        ### Basic Operation
+        - Blocks until `size` clients reach the barrier
+        - Returns 204 No Content when barrier triggers
+        - Returns 408 Request Timeout on `maxwait`
+        - Returns 409 Conflict if barrier already triggered
+        - If `maxwait` is negative, waits indefinitely
+        - If `maxwait` is 0, returns immediately
+
+        ### Usage Tips
+        - Default size is 2 clients
+        - All waiting clients are released simultaneously
+        - Use for multi-party synchronization
+        - Consider network latency when setting timeouts
+        - Barriers cannot be reused after triggering
       parameters:
       - description: Barrier name
         in: path
@@ -247,10 +259,20 @@ paths:
       - Counter
   /counter/{name}/count:
     get:
-      description: |-
-        - Atomically adds `amount` to counter value
-        - If `amount` is negative, decrements the counter
-        - Returns the new counter value
+      description: |
+        Atomically increment or decrement a distributed counter.
+
+        ### Basic Operation
+        - Adds `amount` to counter value atomically
+        - Returns new counter value
+        - Negative `amount` decrements the counter
+        - Default `amount` is 1
+
+        ### Usage Tips
+        - Use for distributed counting/statistics
+        - Safe for concurrent access
+        - Combine with monitoring for thresholds
+        - Values are 64-bit signed integers
       parameters:
       - description: Counter name
         in: path
@@ -282,10 +304,20 @@ paths:
       - Counter
   /counter/{name}/reset:
     get:
-      description: |-
-        - Reset counter to specified value
-        - If `value` is not provided, resets counter to 0
+      description: |
+        Reset counter to specified value.
+
+        ### Basic Operation
+        - Sets counter to specified `value`
         - Returns 204 No Content on success
+        - Default `value` is 0
+        - Operation is atomic
+
+        ### Usage Tips
+        - Use for periodic resets
+        - Useful for time-based metrics
+        - Consider using delete instead of reset
+        - All clients see new value immediately
       parameters:
       - description: Counter name
         in: path
@@ -338,7 +370,18 @@ paths:
       - Counter
   /counter/{name}/value:
     get:
-      description: '- Returns current counter value'
+      description: |
+        Get current counter value.
+
+        ### Basic Operation
+        - Returns current counter value
+        - Value is returned as plain text
+        - Operation is atomic
+        - Returns 200 OK with value
+
+        ### Usage Tips
+        - Use for monitoring/metrics collection
+        - Values are consistent across all clients
       parameters:
       - description: Counter name
         in: path
@@ -778,10 +821,20 @@ paths:
       - Watchdog
   /watchdog/{name}/kick:
     get:
-      description: |-
-        - Reset the watchdog expiration timer, keeping all clients on `wait` requests waiting.
-        - The watchdog will expire in `expires` milliseconds unless kicked again
-        - If `expires` is 0 or negative, the watchdog will expire immediately
+      description: |
+        Reset watchdog timer to prevent expiration notification.
+
+        ### Basic Operation
+        - Resets expiration timer to `expires` milliseconds
+        - Returns immediately with 204 No Content
+        - Zero or negative `expires` triggers immediate expiration
+        - Default `expires` is 60000 (one minute)
+
+        ### Usage Tips
+        - Kick frequently enough to prevent false alarms
+        - Set `expires` longer than maximum task interval
+        - Consider network latency when setting intervals
+        - Kick before heavy operations, not after
       parameters:
       - description: Watchdog name
         in: path
@@ -834,12 +887,21 @@ paths:
       - Watchdog
   /watchdog/{name}/wait:
     get:
-      description: |-
-        - Wait for a watchdog to expire or until `maxwait` milliseconds have passed
-        - Each `kick` request resets the watchdog expiration timer.
-        - Return immediately if the watchdog has already expired
-        - If `maxwait` is negative, waits indefinitely.
-        - If `maxwait` is 0, returns immediately.
+      description: |
+        Monitor a periodic task by waiting for its watchdog to expire.
+
+        ### Basic Operation
+        - Blocks until watchdog expires or timeout occurs
+        - Returns 204 No Content when watchdog expires
+        - Returns 408 Request Timeout on `maxwait`
+        - If `maxwait` is negative, waits indefinitely
+        - If `maxwait` is 0, returns immediately
+
+        ### Usage Tips
+        - Multiple clients can monitor same watchdog
+        - All waiting clients are notified on expiration
+        - Use reasonable `maxwait` for monitoring tasks
+        - Combine with alerts/monitoring systems
       parameters:
       - description: Watchdog name
         in: path

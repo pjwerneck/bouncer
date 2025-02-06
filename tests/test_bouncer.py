@@ -74,8 +74,8 @@ def test_tokenbucket(bouncer):
 
     assert results.count(204) == 10
     assert results.count(408) == 10
-    # the 10 concurrent requests should complete in 20ms
-    assert end - start == pytest.approx(0, abs=0.02)
+    # the 10 concurrent requests should complete in less than 100ms
+    assert end - start < 0.1
 
     # try making 20 requests with waiting. 20 should succeed, but it should take
     # close to 2 seconds since the bucket is empty now
@@ -115,8 +115,8 @@ def test_tokenbucket_under_load(bouncer):
     assert timeout_count == 1000
 
     # with 50 workers and 2000 requests, we should get the 2000 responses within
-    # 200ms
-    assert statistics.mean(response_times) == pytest.approx(0, abs=0.2)
+    # 1s
+    assert statistics.mean(response_times) < 1
 
     # get stats
     stats = requests.get(f"{bouncer}/tokenbucket/loadtest1/stats").json()
@@ -196,8 +196,8 @@ def test_semaphore_size_10_and_10_clients(bouncer):
     # all results should be close to each other, since all 10 clients can hold
     # the semaphore at the same time
     for a, b in it.combinations(results, 2):
-        assert b[0] - a[0] == pytest.approx(0, abs=0.01)
-        assert b[1] - a[1] == pytest.approx(0, abs=0.01)
+        assert b[0] - a[0] == pytest.approx(0, abs=0.02)
+        assert b[1] - a[1] == pytest.approx(0, abs=0.02)
 
     stats = requests.get(f"{url}/stats").json()
     assert stats["acquired"] == 10

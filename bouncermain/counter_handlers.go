@@ -41,9 +41,7 @@ func (r *CounterResetRequest) Decode(values url.Values) error {
 
 // CounterCountHandler godoc
 // @Summary Increment or decrement counter
-// @Description - Atomically adds `amount` to counter value
-// @Description - If `amount` is negative, decrements the counter
-// @Description - Returns the new counter value
+// @description.markdown counter_count.md
 // @Tags Counter
 // @Produce plain
 // @Param name path string true "Counter name"
@@ -75,9 +73,7 @@ func CounterCountHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 
 // CounterResetHandler godoc
 // @Summary Reset counter value
-// @Description - Reset counter to specified value
-// @Description - If `value` is not provided, resets counter to 0
-// @Description - Returns 204 No Content on success
+// @description.markdown counter_reset.md
 // @Tags Counter
 // @Produce plain
 // @Param name path string true "Counter name"
@@ -108,7 +104,7 @@ func CounterResetHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 
 // CounterValueHandler godoc
 // @Summary Get counter value
-// @Description - Returns current counter value
+// @description.markdown counter_value.md
 // @Tags Counter
 // @Produce plain
 // @Param name path string true "Counter name"

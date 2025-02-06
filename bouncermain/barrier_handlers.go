@@ -27,10 +27,7 @@ func (r *BarrierWaitRequest) Decode(values url.Values) error {
 
 // BarrierWaitHandler godoc
 // @Summary Wait at barrier
-// @Description - Wait until `size` parties have arrived or until `maxwait` milliseconds have passed.
-// @Description - Returns `409 Conflict` immediately if `size` parties have already arrived.
-// @Description - If `maxwait` is negative, waits indefinitely.
-// @Description - If `maxwait` is 0, returns immediately.
+// @Description.markdown barrier_wait.md
 // @Tags Barrier
 // @Produce plain
 // @Param name path string true "Barrier name"
