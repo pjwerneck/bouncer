@@ -161,7 +161,7 @@ func (semaphore *Semaphore) Acquire(maxwait time.Duration, expires time.Duration
 			return "", ErrTimedOut
 		}
 
-		time.Sleep(time.Duration(100) * time.Millisecond)
+		time.Sleep(time.Duration(10) * time.Millisecond)
 	}
 
 	logger.Debugf("semaphore acquired: name=%v, key=%v", semaphore.Name, token)

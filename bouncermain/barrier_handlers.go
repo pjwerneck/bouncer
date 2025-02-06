@@ -49,6 +49,8 @@ func BarrierWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 
 	err = req.Decode(r.URL.Query())
 	if err == nil {
+		logger.Infof("Barrier wait requested: name=%v id=%v size=%v maxwait=%v",
+			ps[0].Value, req.ID, req.Size, req.MaxWait)
 		barrier, err = getBarrier(ps[0].Value, req.Size)
 	}
 

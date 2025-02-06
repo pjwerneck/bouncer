@@ -64,6 +64,7 @@ func CounterCountHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 
 	err = req.Decode(r.URL.Query())
 	if err == nil {
+		logger.Infof("Counter count requested: name=%v id=%v amount=%v", ps[0].Value, req.ID, req.Amount)
 		counter, err = getCounter(ps[0].Value)
 	}
 
@@ -97,6 +98,7 @@ func CounterResetHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 
 	err = req.Decode(r.URL.Query())
 	if err == nil {
+		logger.Infof("Counter reset requested: name=%v id=%v value=%v", ps[0].Value, req.ID, req.Value)
 		counter, err = getCounter(ps[0].Value)
 	}
 

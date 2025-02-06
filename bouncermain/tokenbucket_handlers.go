@@ -2,6 +2,7 @@ package bouncermain
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/url"
 	"time"
@@ -17,7 +18,7 @@ type TokenBucketAcquireRequest struct {
 	ID       string        `schema:"id"`
 }
 
-func newTokenBuckeAcquiretRequest() *TokenBucketAcquireRequest {
+func newTokenBuckeAcquireRequest() *TokenBucketAcquireRequest {
 	return &TokenBucketAcquireRequest{
 		Size:     1,
 		Interval: time.Second,
@@ -50,18 +51,27 @@ func TokenBucketAcquireHandler(w http.ResponseWriter, r *http.Request, ps httpro
 	var err error
 	var bucket *TokenBucket
 
-	req := newTokenBuckeAcquiretRequest()
+	req := newTokenBuckeAcquireRequest()
 	rep := newReply()
 
 	err = req.Decode(r.URL.Query())
 	if err == nil {
-		logger.Debugf("tokenbucket.acquire: %+v", req)
 		bucket, err = getTokenBucket(ps[0].Value, req.Size, req.Interval)
 	}
 
 	if err == nil {
+		start := time.Now()
 		err = bucket.Acquire(req.MaxWait, req.Arrival)
-		rep.Status = http.StatusNoContent
+		elapsed := time.Since(start)
+
+		if errors.Is(err, ErrTimedOut) {
+			logger.Infof("TIMEOUT - Token bucket - acquire: name=%v id=%v size=%v interval=%v wait=%v",
+				ps[0].Value, req.ID, req.Size, req.Interval, elapsed)
+		} else if err == nil {
+			logger.Infof("SUCCESS - Token bucket - acquire: name=%v id=%v size=%v interval=%v wait=%v",
+				ps[0].Value, req.ID, req.Size, req.Interval, elapsed)
+			rep.Status = http.StatusNoContent
+		}
 	}
 
 	rep.WriteResponse(w, r, err)

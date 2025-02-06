@@ -12,6 +12,7 @@ A lightweight RPC service for distributed application control. Provides primitiv
 - Use `maxwait=0` to test resource availability without blocking
 - Monitor resource usage with the `/stats` endpoints
 - Check server readiness at `/.well-known/ready`
+- All endpoints accept an optional `id` parameter for logging
 
 ### Status Codes
 - `204 No Content`: Operation completed successfully

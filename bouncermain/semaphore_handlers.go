@@ -69,6 +69,8 @@ func SemaphoreAcquireHandler(w http.ResponseWriter, r *http.Request, ps httprout
 	err = req.Decode(r.URL.Query())
 	if err == nil {
 		logger.Debugf("semaphore.acquire: %+v", req)
+		logger.Infof("Semaphore acquire requested: name=%v id=%v size=%v maxwait=%v",
+			ps[0].Value, req.ID, req.Size, req.MaxWait)
 		semaphore, err = getSemaphore(ps[0].Value, req.Size)
 	}
 
@@ -103,6 +105,7 @@ func SemaphoreReleaseHandler(w http.ResponseWriter, r *http.Request, ps httprout
 	err = req.Decode(r.URL.Query())
 	if err == nil {
 		logger.Debugf("semaphore.release: %+v", req)
+		logger.Infof("Semaphore release requested: name=%v id=%v key=%v", ps[0].Value, req.ID, req.Key)
 		semaphore, err = getSemaphore(ps[0].Value, 1) // Size doesn't matter for release
 	}
 

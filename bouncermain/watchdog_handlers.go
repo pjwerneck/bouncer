@@ -63,6 +63,7 @@ func WatchdogWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 
 	err = req.Decode(r.URL.Query())
 	if err == nil {
+		logger.Infof("Watchdog wait requested: name=%v id=%v maxwait=%v", ps[0].Value, req.ID, req.MaxWait)
 		watchdog, err = getWatchdog(ps[0].Value, time.Minute) // Default expiry
 	}
 
@@ -95,6 +96,7 @@ func WatchdogKickHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 
 	err = req.Decode(r.URL.Query())
 	if err == nil {
+		logger.Infof("Watchdog kick requested: name=%v id=%v expires=%v", ps[0].Value, req.ID, req.Expires)
 		watchdog, err = getWatchdog(ps[0].Value, req.Expires)
 	}
 

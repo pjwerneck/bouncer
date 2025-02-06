@@ -64,6 +64,7 @@ func EventWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 
 	err = req.Decode(r.URL.Query())
 	if err == nil {
+		logger.Infof("Event wait requested: name=%v id=%v maxwait=%v", ps[0].Value, req.ID, req.MaxWait)
 		event, err = getEvent(ps[0].Value)
 	}
 
@@ -103,6 +104,7 @@ func EventSendHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 
 	err = req.Decode(r.URL.Query())
 	if err == nil {
+		logger.Infof("Event send requested: name=%v id=%v", ps[0].Value, req.ID)
 		event, err = getEvent(ps[0].Value)
 	}
 
