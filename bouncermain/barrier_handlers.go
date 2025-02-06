@@ -12,12 +12,14 @@ import (
 type BarrierWaitRequest struct {
 	Size    uint64        `schema:"size"`
 	MaxWait time.Duration `schema:"maxwait"`
+	ID      string        `schema:"id"`
 }
 
 func newBarrierWaitRequest() *BarrierWaitRequest {
 	return &BarrierWaitRequest{
 		Size:    2,
 		MaxWait: -1,
+		ID:      "",
 	}
 }
 
@@ -33,6 +35,7 @@ func (r *BarrierWaitRequest) Decode(values url.Values) error {
 // @Param name path string true "Barrier name"
 // @Param size query int false "Number of parties to wait for" default(2)
 // @Param maxwait query int false "Maximum wait time" default(-1)
+// @Param id query string false "Optional request identifier for logging"
 // @Success 204 "Barrier completed successfully"
 // @Failure 408 {string} Reply "Request Timeout - maxwait exceeded"
 // @Failure 409 {string} Reply "Conflict - barrier already completed"

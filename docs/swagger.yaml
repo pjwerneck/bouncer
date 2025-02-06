@@ -220,6 +220,10 @@ paths:
         in: query
         name: maxwait
         type: integer
+      - description: Optional request identifier for logging
+        in: query
+        name: id
+        type: string
       produces:
       - text/plain
       responses:
@@ -284,6 +288,10 @@ paths:
         in: query
         name: amount
         type: integer
+      - description: Optional request identifier for logging
+        in: query
+        name: id
+        type: string
       produces:
       - text/plain
       responses:
@@ -329,6 +337,10 @@ paths:
         in: query
         name: value
         type: integer
+      - description: Optional request identifier for logging
+        in: query
+        name: id
+        type: string
       produces:
       - text/plain
       responses:
@@ -448,6 +460,10 @@ paths:
         in: query
         name: message
         type: string
+      - description: Optional request identifier for logging
+        in: query
+        name: id
+        type: string
       produces:
       - text/plain
       responses:
@@ -519,6 +535,10 @@ paths:
         in: query
         name: maxwait
         type: integer
+      - description: Optional request identifier for logging
+        in: query
+        name: id
+        type: string
       produces:
       - text/plain
       responses:
@@ -599,6 +619,10 @@ paths:
         in: query
         name: expires
         type: integer
+      - description: Optional request identifier for logging
+        in: query
+        name: id
+        type: string
       produces:
       - text/plain
       responses:
@@ -640,6 +664,10 @@ paths:
         in: query
         name: key
         required: true
+        type: string
+      - description: Optional request identifier for logging
+        in: query
+        name: id
         type: string
       produces:
       - text/plain
@@ -747,6 +775,10 @@ paths:
         in: query
         name: maxwait
         type: integer
+      - description: Optional request identifier for logging
+        in: query
+        name: id
+        type: string
       produces:
       - text/plain
       responses:
@@ -846,6 +878,10 @@ paths:
         in: query
         name: expires
         type: integer
+      - description: Optional request identifier for logging
+        in: query
+        name: id
+        type: string
       produces:
       - text/plain
       responses:
@@ -913,6 +949,10 @@ paths:
         in: query
         name: maxwait
         type: integer
+      - description: Optional request identifier for logging
+        in: query
+        name: id
+        type: string
       produces:
       - text/plain
       responses:

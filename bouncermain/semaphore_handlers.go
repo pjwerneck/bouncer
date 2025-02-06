@@ -13,6 +13,7 @@ type SemaphoreAcquireRequest struct {
 	Size    uint64        `schema:"size"`
 	MaxWait time.Duration `schema:"maxWait"`
 	Expires time.Duration `schema:"expires"`
+	ID      string        `schema:"id"`
 }
 
 func newSemaphoreAcquireRequest() *SemaphoreAcquireRequest {
@@ -20,6 +21,7 @@ func newSemaphoreAcquireRequest() *SemaphoreAcquireRequest {
 		Size:    1,
 		MaxWait: -1,
 		Expires: time.Minute,
+		ID:      "",
 	}
 }
 
@@ -29,10 +31,13 @@ func (r *SemaphoreAcquireRequest) Decode(values url.Values) error {
 
 type SemaphoreReleaseRequest struct {
 	Key string `schema:"key"`
+	ID  string `schema:"id"`
 }
 
 func newSemaphoreReleaseRequest() *SemaphoreReleaseRequest {
-	return &SemaphoreReleaseRequest{}
+	return &SemaphoreReleaseRequest{
+		ID: "",
+	}
 }
 
 func (r *SemaphoreReleaseRequest) Decode(values url.Values) error {
@@ -48,6 +53,7 @@ func (r *SemaphoreReleaseRequest) Decode(values url.Values) error {
 // @Param size query int false "Semaphore size" default(1)
 // @Param maxwait query int false "Maximum wait time" default(-1)
 // @Param expires query int false "Expiration time" default(60000)
+// @Param id query string false "Optional request identifier for logging"
 // @Success 200 {string} Reply "The semaphore release key"
 // @Failure 400 {string} Reply "Bad Request - invalid parameters"
 // @Failure 404 {string} Reply "Not Found - semaphore not found
@@ -81,6 +87,7 @@ func SemaphoreAcquireHandler(w http.ResponseWriter, r *http.Request, ps httprout
 // @Produce plain
 // @Param name path string true "Semaphore name"
 // @Param key query string true "Release key"
+// @Param id query string false "Optional request identifier for logging"
 // @Success 204 "Semaphore released successfully"
 // @Failure 400 {string} Reply "Bad Request - invalid parameters"
 // @Failure 404 {string} Reply "Not Found - semaphore not found

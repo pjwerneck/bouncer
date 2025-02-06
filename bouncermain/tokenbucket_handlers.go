@@ -14,6 +14,7 @@ type TokenBucketAcquireRequest struct {
 	Interval time.Duration `schema:"interval"`
 	MaxWait  time.Duration `schema:"maxwait"`
 	Arrival  time.Time     `schema:"-"`
+	ID       string        `schema:"id"`
 }
 
 func newTokenBuckeAcquiretRequest() *TokenBucketAcquireRequest {
@@ -22,6 +23,7 @@ func newTokenBuckeAcquiretRequest() *TokenBucketAcquireRequest {
 		Interval: time.Second,
 		MaxWait:  -1,
 		Arrival:  time.Now(),
+		ID:       "",
 	}
 }
 
@@ -38,6 +40,7 @@ func (r *TokenBucketAcquireRequest) Decode(values url.Values) error {
 // @Param size query int false "Bucket size" default(1)
 // @Param interval query int false "Refill interval" default(1000)
 // @Param maxwait query int false "Maximum wait time" default(-1)
+// @Param id query string false "Optional request identifier for logging"
 // @Success 204 {string} Reply "Token acquired successfully"
 // @Failure 400 {string} Reply "Bad Request - invalid parameters"
 // @Failure 404 {string} Reply "Not Found - token bucket not found

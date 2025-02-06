@@ -134,6 +134,12 @@ const docTemplate = `{
                         "description": "Maximum wait time",
                         "name": "maxwait",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional request identifier for logging",
+                        "name": "id",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -211,6 +217,12 @@ const docTemplate = `{
                         "description": "Amount to add (can be negative)",
                         "name": "amount",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional request identifier for logging",
+                        "name": "id",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -258,6 +270,12 @@ const docTemplate = `{
                         "default": 0,
                         "description": "Value to set",
                         "name": "value",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional request identifier for logging",
+                        "name": "id",
                         "in": "query"
                     }
                 ],
@@ -405,6 +423,12 @@ const docTemplate = `{
                         "description": "Event message",
                         "name": "message",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional request identifier for logging",
+                        "name": "id",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -490,6 +514,12 @@ const docTemplate = `{
                         "default": -1,
                         "description": "Maximum wait time",
                         "name": "maxwait",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional request identifier for logging",
+                        "name": "id",
                         "in": "query"
                     }
                 ],
@@ -591,6 +621,12 @@ const docTemplate = `{
                         "description": "Expiration time",
                         "name": "expires",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional request identifier for logging",
+                        "name": "id",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -645,6 +681,12 @@ const docTemplate = `{
                         "name": "key",
                         "in": "query",
                         "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional request identifier for logging",
+                        "name": "id",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -777,6 +819,12 @@ const docTemplate = `{
                         "description": "Maximum wait time",
                         "name": "maxwait",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional request identifier for logging",
+                        "name": "id",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -907,6 +955,12 @@ const docTemplate = `{
                         "description": "Time until expiration in milliseconds",
                         "name": "expires",
                         "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional request identifier for logging",
+                        "name": "id",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -986,6 +1040,12 @@ const docTemplate = `{
                         "default": -1,
                         "description": "Maximum time to wait",
                         "name": "maxwait",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Optional request identifier for logging",
+                        "name": "id",
                         "in": "query"
                     }
                 ],

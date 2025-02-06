@@ -11,11 +11,13 @@ import (
 
 type WatchdogWaitRequest struct {
 	MaxWait time.Duration `schema:"maxwait"`
+	ID      string        `schema:"id"`
 }
 
 func newWatchdogWaitRequest() *WatchdogWaitRequest {
 	return &WatchdogWaitRequest{
 		MaxWait: -1,
+		ID:      "",
 	}
 }
 
@@ -25,11 +27,13 @@ func (r *WatchdogWaitRequest) Decode(values url.Values) error {
 
 type WatchdogKickRequest struct {
 	Expires time.Duration `schema:"expires"`
+	ID      string        `schema:"id"`
 }
 
 func newWatchdogKickRequest() *WatchdogKickRequest {
 	return &WatchdogKickRequest{
 		Expires: time.Minute,
+		ID:      "",
 	}
 }
 
@@ -44,6 +48,7 @@ func (r *WatchdogKickRequest) Decode(values url.Values) error {
 // @Produce plain
 // @Param name path string true "Watchdog name"
 // @Param maxwait query int false "Maximum time to wait" default(-1)
+// @Param id query string false "Optional request identifier for logging"
 // @Success 204 "Watchdog expired or maxWait reached"
 // @Failure 400 {string} Reply "Bad Request - invalid parameters"
 // @Failure 404 {string} Reply "Not Found - watchdog not found"
@@ -76,6 +81,7 @@ func WatchdogWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 // @Produce plain
 // @Param name path string true "Watchdog name"
 // @Param expires query int false "Time until expiration in milliseconds" default(60000)
+// @Param id query string false "Optional request identifier for logging"
 // @Success 204 "Watchdog timer reset successfully"
 // @Failure 400 {string} Reply "Bad Request - invalid parameters"
 // @Failure 404 {string} Reply "Not Found - watchdog not found"

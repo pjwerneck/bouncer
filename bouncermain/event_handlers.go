@@ -12,11 +12,13 @@ import (
 // Event handler requests
 type EventWaitRequest struct {
 	MaxWait time.Duration `schema:"maxwait"`
+	ID      string        `schema:"id"`
 }
 
 func newEventWaitRequest() *EventWaitRequest {
 	return &EventWaitRequest{
 		MaxWait: -1,
+		ID:      "",
 	}
 }
 
@@ -26,11 +28,13 @@ func (r *EventWaitRequest) Decode(values url.Values) error {
 
 type EventSendRequest struct {
 	Message string `schema:"message"`
+	ID      string `schema:"id"`
 }
 
 func newEventSendRequest() *EventSendRequest {
 	return &EventSendRequest{
 		Message: "",
+		ID:      "",
 	}
 }
 
@@ -45,6 +49,7 @@ func (r *EventSendRequest) Decode(values url.Values) error {
 // @Produce plain
 // @Param name path string true "Event name"
 // @Param maxwait query int false "Maximum wait time" default(-1)
+// @Param id query string false "Optional request identifier for logging"
 // @Success 200 {string} Reply "Event signal received"
 // @Failure 400 {string} Reply "Bad Request - invalid parameters"
 // @Failure 404 {string} Reply "Not Found - event handler not found"
@@ -83,6 +88,7 @@ func EventWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 // @Produce plain
 // @Param name path string true "Event name"
 // @Param message query string false "Event message"
+// @Param id query string false "Optional request identifier for logging"
 // @Success 204 "Event sent successfully"
 // @Failure 400 {string} Reply "Bad Request - invalid parameters"
 // @Failure 404 {string} Reply "Not Found - event handler not found"

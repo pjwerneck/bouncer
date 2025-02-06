@@ -12,12 +12,14 @@ import (
 // Counter handler requests
 
 type CounterCountRequest struct {
-	Amount int64 `schema:"amount"`
+	Amount int64  `schema:"amount"`
+	ID     string `schema:"id"`
 }
 
 func newCounterCountRequest() *CounterCountRequest {
 	return &CounterCountRequest{
 		Amount: 1,
+		ID:     "",
 	}
 }
 
@@ -26,12 +28,14 @@ func (r *CounterCountRequest) Decode(values url.Values) error {
 }
 
 type CounterResetRequest struct {
-	Value int64 `schema:"value"`
+	Value int64  `schema:"value"`
+	ID    string `schema:"id"`
 }
 
 func newCounterResetRequest() *CounterResetRequest {
 	return &CounterResetRequest{
 		Value: 0,
+		ID:    "",
 	}
 }
 
@@ -46,6 +50,7 @@ func (r *CounterResetRequest) Decode(values url.Values) error {
 // @Produce plain
 // @Param name path string true "Counter name"
 // @Param amount query int false "Amount to add (can be negative)" default(1)
+// @Param id query string false "Optional request identifier for logging"
 // @Success 200 {string} string "New counter value"
 // @Failure 400 {string} Reply "Bad Request - invalid parameters"
 // @Failure 404 {string} Reply "Not Found - counter not found"
@@ -78,6 +83,7 @@ func CounterCountHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 // @Produce plain
 // @Param name path string true "Counter name"
 // @Param value query int false "Value to set" default(0)
+// @Param id query string false "Optional request identifier for logging"
 // @Success 204 "Counter reset successful"
 // @Failure 400 {string} Reply "Bad Request - invalid parameters"
 // @Failure 404 {string} Reply "Not Found - counter not found"
