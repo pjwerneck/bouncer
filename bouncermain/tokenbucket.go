@@ -21,7 +21,9 @@ type TokenBucket struct {
 	Stats    *TokenBucketStats
 	acquireC chan bool
 	timer    *time.Timer
-	mu       sync.RWMutex // protect size and interval
+	done     chan struct{}
+	closed   bool
+	mu       sync.RWMutex // protect size, interval, and closed flag
 }
 
 var buckets = map[string]*TokenBucket{}
@@ -35,6 +37,8 @@ func newTokenBucket(name string, size uint64, interval time.Duration) (bucket *T
 		Stats:    &TokenBucketStats{CreatedAt: time.Now().Format(time.RFC3339)},
 		acquireC: make(chan bool),
 		timer:    time.NewTimer(interval),
+		done:     make(chan struct{}),
+		closed:   false,
 	}
 
 	buckets[name] = bucket
@@ -73,17 +77,32 @@ func getTokenBucket(name string, size uint64, interval time.Duration) (bucket *T
 
 func (bucket *TokenBucket) refill() {
 	for {
-		bucket.mu.RLock()
-		size := bucket.size
-		interval := bucket.interval
-		bucket.mu.RUnlock()
+		select {
+		case <-bucket.done:
+			return
+		default:
+			bucket.mu.RLock()
+			size := bucket.size
+			interval := bucket.interval
+			closed := bucket.closed
+			bucket.mu.RUnlock()
 
-		for n := uint64(0); n < size; n++ {
-			bucket.acquireC <- true
+			if closed {
+				return
+			}
+
+			for n := uint64(0); n < size; n++ {
+				select {
+				case <-bucket.done:
+					return
+				case bucket.acquireC <- true:
+					// token sent successfully
+				}
+			}
+
+			<-bucket.timer.C
+			bucket.timer.Reset(interval)
 		}
-
-		<-bucket.timer.C
-		bucket.timer.Reset(interval)
 	}
 }
 
@@ -148,8 +167,11 @@ func deleteTokenBucket(name string) error {
 		return ErrNotFound
 	}
 
-	// Stop the refill goroutine by closing acquireC
-	close(bucket.acquireC)
-	delete(buckets, name)
+	bucket.mu.Lock()
+	bucket.closed = true
+	bucket.mu.Unlock()
+
+	close(bucket.done)    // Signal refill goroutine to stop
+	delete(buckets, name) // Remove from global map
 	return nil
 }
