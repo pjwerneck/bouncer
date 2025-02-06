@@ -62,6 +62,7 @@ func (r *SemaphoreReleaseRequest) Decode(values url.Values) error {
 func SemaphoreAcquireHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var err error
 	var semaphore *Semaphore
+	var wait time.Duration = 0
 
 	req := newSemaphoreAcquireRequest()
 	rep := newReply()
@@ -74,20 +75,18 @@ func SemaphoreAcquireHandler(w http.ResponseWriter, r *http.Request, ps httprout
 	if err == nil {
 		start := time.Now()
 		rep.Body, err = semaphore.Acquire(req.MaxWait, req.Expires, "")
-		wait := time.Since(start)
-		logStatus := "success"
+		wait = time.Since(start)
 
 		if errors.Is(err, ErrTimedOut) {
-			logStatus = "timeout"
+			rep.Status = http.StatusRequestTimeout
 		} else if err == nil {
 			rep.Status = http.StatusOK
 		}
 
-		logRequest(logStatus, "semaphore", "acquire", ps[0].Value, wait, req).Send()
-
 	}
 
 	rep.WriteResponse(w, r, err)
+	logRequest(rep.Status, "semaphore", "acquire", ps[0].Value, wait, req).Send()
 }
 
 // SemaphoreReleaseHandler godoc
@@ -116,23 +115,18 @@ func SemaphoreReleaseHandler(w http.ResponseWriter, r *http.Request, ps httprout
 	}
 
 	if err == nil {
-		start := time.Now()
 		err = semaphore.Release(req.Key)
-		wait := time.Since(start)
-		logStatus := "success"
 
 		if errors.Is(err, ErrKeyError) {
-			logStatus = "conflict"
 			rep.Status = http.StatusConflict
 		} else if err == nil {
 			rep.Status = http.StatusNoContent
 		}
 
-		logRequest(logStatus, "semaphore", "release", ps[0].Value, wait, req).Send()
-
 	}
 
 	rep.WriteResponse(w, r, err)
+	logRequest(rep.Status, "semaphore", "release", ps[0].Value, 0, req).Send()
 }
 
 // SemaphoreDeleteHandler godoc
@@ -145,8 +139,8 @@ func SemaphoreReleaseHandler(w http.ResponseWriter, r *http.Request, ps httprout
 // @Failure 404 {string} Reply "Not Found - semaphore not found"
 // @Router /semaphore/{name} [delete]
 func SemaphoreDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	res := DeleteHandler(w, r, ps, deleteSemaphore)
-	logRequest(res, "semaphore", "delete", ps[0].Value, 0, nil).Send()
+	status := DeleteHandler(w, r, ps, deleteSemaphore)
+	logRequest(status, "semaphore", "delete", ps[0].Value, 0, nil).Send()
 }
 
 // SemaphoreStatsHandler godoc
@@ -159,6 +153,6 @@ func SemaphoreDeleteHandler(w http.ResponseWriter, r *http.Request, ps httproute
 // @Failure 404 {string} Reply "Not Found - semaphore not found"
 // @Router /semaphore/{name}/stats [get]
 func SemaphoreStatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	res := StatsHandler(w, r, ps, getSemaphoreStats)
-	logRequest(res, "semaphore", "stats", ps[0].Value, 0, nil).Send()
+	status := StatsHandler(w, r, ps, getSemaphoreStats)
+	logRequest(status, "semaphore", "stats", ps[0].Value, 0, nil).Send()
 }

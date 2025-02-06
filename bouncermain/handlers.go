@@ -39,29 +39,27 @@ import (
 type deleteFunc func(string) error
 
 // Generic delete handler
-func DeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params, df deleteFunc) (res string) {
+func DeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params, df deleteFunc) (status int) {
 	rep := newReply()
 	err := df(ps[0].Value)
 
 	if err == nil {
 		rep.Status = http.StatusNoContent
-		res = "deleted"
 
 	} else if err == ErrNotFound {
 		rep.Status = http.StatusNotFound
-		res = "not found"
 	}
 
 	rep.WriteResponse(w, r, err)
 
-	return res
+	return rep.Status
 }
 
 // StatsGetter is a function type for getting stats of any synchronization primitive
 type StatsGetter = func(name string) (interface{}, error)
 
 // StatsHandler creates a handler that gets stats for a synchronization primitive
-func StatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params, getter StatsGetter) (res string) {
+func StatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params, getter StatsGetter) (status int) {
 	rep := newReply()
 
 	stats, err := getter(ps[0].Value)
@@ -69,17 +67,15 @@ func StatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params, 
 		buf, _ := json.Marshal(stats)
 		rep.Body = string(buf)
 		rep.Status = http.StatusOK
-		res = "success"
 	}
 
 	if err == ErrNotFound {
 		rep.Status = http.StatusNotFound
-		res = "not found"
 	}
 
 	rep.WriteResponse(w, r, err)
 
-	return res
+	return rep.Status
 }
 
 // WellKnownReady godoc
@@ -116,15 +112,34 @@ func _addStructFieldsToLog(evt *zerolog.Event, v interface{}) *zerolog.Event {
 	return evt
 }
 
-func logRequest(status string, resourceType string, call string, name string, wait time.Duration, req interface{}) *zerolog.Event {
+func logRequest(status int, resourceType string, call string, name string, wait time.Duration, req interface{}) *zerolog.Event {
+	var st string
+
+	switch status {
+	case http.StatusOK:
+		st = "ok"
+	case http.StatusNoContent:
+		st = "ok"
+	case http.StatusNotFound:
+		st = "not found"
+	case http.StatusConflict:
+		st = "conflict"
+	case http.StatusRequestTimeout:
+		st = "timeout"
+	case http.StatusBadRequest:
+		st = "bad request"
+	default:
+		st = "unknown"
+		log.Warn().Int("status", status).Msg("Unknown status code")
+	}
+
 	evt := log.Info().
-		Str("status", status).
+		Str("status", st).
 		Str("type", resourceType).
 		Str("call", call).
 		Str("name", name).
 		Int64("wait", wait.Milliseconds())
 
-	// Only add fields from request if it's not nil
 	if req != nil {
 		_addStructFieldsToLog(evt, req)
 	}

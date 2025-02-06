@@ -34,11 +34,10 @@ func newWatchdog(name string, expires time.Duration) *Watchdog {
 	return watchdog
 }
 
-func (w *Watchdog) Kick(expires time.Duration) error {
+func (w *Watchdog) Kick(expires time.Duration) {
 	atomic.StoreInt64(&w.expires, time.Now().Add(expires).UnixNano())
 	atomic.AddUint64(&w.Stats.Kicks, 1)
 	w.Stats.LastKick = time.Now().Format(time.RFC3339)
-	return nil
 }
 
 func (w *Watchdog) Wait(maxwait time.Duration) error {

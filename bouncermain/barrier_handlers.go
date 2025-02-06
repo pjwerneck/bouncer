@@ -43,6 +43,7 @@ func (r *BarrierWaitRequest) Decode(values url.Values) error {
 func BarrierWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var err error
 	var barrier *Barrier
+	var wait time.Duration = 0
 
 	req := newBarrierWaitRequest()
 	rep := newReply()
@@ -55,23 +56,20 @@ func BarrierWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 	if err == nil {
 		start := time.Now()
 		err = barrier.Wait(req.MaxWait)
-		wait := time.Since(start)
-		logStatus := "success"
+		wait = time.Since(start)
 
 		if errors.Is(err, ErrTimedOut) {
-			logStatus = "timeout"
 			rep.Status = http.StatusRequestTimeout
 		} else if errors.Is(err, ErrBarrierClosed) {
-			logStatus = "closed"
 			rep.Status = http.StatusConflict
 		} else if err == nil {
 			rep.Status = http.StatusNoContent
 		}
 
-		logRequest(logStatus, "barrier", "wait", ps[0].Value, wait, req).Send()
 	}
 
 	rep.WriteResponse(w, r, err)
+	logRequest(rep.Status, "barrier", "wait", ps[0].Value, wait, req).Send()
 }
 
 // BarrierDeleteHandler godoc
@@ -84,7 +82,8 @@ func BarrierWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 // @Failure 404 {string} Reply "Not Found - barrier not found"
 // @Router /barrier/{name} [delete]
 func BarrierDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	DeleteHandler(w, r, ps, deleteBarrier)
+	status := DeleteHandler(w, r, ps, deleteBarrier)
+	logRequest(status, "barrier", "delete", ps[0].Value, 0, nil).Send()
 }
 
 // BarrierStatsHandler godoc
@@ -97,5 +96,6 @@ func BarrierDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.
 // @Failure 404 {string} Reply "Not Found - barrier not found"
 // @Router /barrier/{name}/stats [get]
 func BarrierStatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	StatsHandler(w, r, ps, getBarrierStats)
+	status := StatsHandler(w, r, ps, getBarrierStats)
+	logRequest(status, "barrier", "stats", ps[0].Value, 0, nil).Send()
 }

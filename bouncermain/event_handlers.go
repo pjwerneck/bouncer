@@ -58,6 +58,7 @@ func (r *EventSendRequest) Decode(values url.Values) error {
 func EventWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var err error
 	var event *Event
+	var wait time.Duration = 0
 
 	req := newEventWaitRequest()
 	rep := newReply()
@@ -70,21 +71,19 @@ func EventWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 	if err == nil {
 		start := time.Now()
 		message, err := event.Wait(req.MaxWait)
-		wait := time.Since(start)
-		logStatus := "success"
+		wait = time.Since(start)
 
 		if errors.Is(err, ErrTimedOut) {
-			logStatus = "timeout"
 			rep.Status = http.StatusRequestTimeout
 		} else if err == nil {
 			rep.Body = message
 			rep.Status = http.StatusOK
 		}
 
-		logRequest(logStatus, "event", "wait", ps[0].Value, wait, req).Send()
 	}
 
 	rep.WriteResponse(w, r, err)
+	logRequest(rep.Status, "event", "wait", ps[0].Value, wait, req).Send()
 }
 
 // EventSendHandler godoc
@@ -113,23 +112,18 @@ func EventSendHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 	}
 
 	if err == nil {
-		start := time.Now()
 		err = event.Send(req.Message)
-		wait := time.Since(start)
-		logStatus := "success"
 
 		if errors.Is(err, ErrEventClosed) {
-			logStatus = "closed"
 			rep.Status = http.StatusConflict
 		} else if err == nil {
 			rep.Status = http.StatusNoContent
 		}
 
-		logRequest(logStatus, "event", "send", ps[0].Value, wait, req).Send()
-
 	}
 
 	rep.WriteResponse(w, r, err)
+	logRequest(rep.Status, "event", "send", ps[0].Value, 0, req).Send()
 }
 
 // EventDeleteHandler godoc
@@ -142,8 +136,8 @@ func EventSendHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Para
 // @Failure 404 {string} Reply "Not Found - event not found"
 // @Router /event/{name} [delete]
 func EventDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	res := DeleteHandler(w, r, ps, deleteEvent)
-	logRequest(res, "event", "delete", ps[0].Value, 0, nil).Send()
+	status := DeleteHandler(w, r, ps, deleteEvent)
+	logRequest(status, "event", "delete", ps[0].Value, 0, nil).Send()
 }
 
 // EventStatsHandler godoc
@@ -156,6 +150,6 @@ func EventDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Pa
 // @Failure 404 {string} Reply "Not Found - event not found"
 // @Router /event/{name}/stats [get]
 func EventStatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	res := StatsHandler(w, r, ps, getEventStats)
-	logRequest(res, "event", "stats", ps[0].Value, 0, nil).Send()
+	status := StatsHandler(w, r, ps, getEventStats)
+	logRequest(status, "event", "stats", ps[0].Value, 0, nil).Send()
 }

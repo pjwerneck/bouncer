@@ -49,6 +49,7 @@ func (r *TokenBucketAcquireRequest) Decode(values url.Values) error {
 func TokenBucketAcquireHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var err error
 	var bucket *TokenBucket
+	var wait time.Duration = 0
 
 	req := newTokenBuckeAcquireRequest()
 	rep := newReply()
@@ -61,21 +62,17 @@ func TokenBucketAcquireHandler(w http.ResponseWriter, r *http.Request, ps httpro
 	if err == nil {
 		start := time.Now()
 		err = bucket.Acquire(req.MaxWait, req.Arrival)
-		wait := time.Since(start)
-		logStatus := "success"
+		wait = time.Since(start)
 
-		if errors.Is(err, ErrTimedOut) {
-			logStatus = "timeout"
-
-		} else if err == nil {
+		if err == nil {
 			rep.Status = http.StatusNoContent
+		} else if errors.Is(err, ErrTimedOut) {
+			rep.Status = http.StatusRequestTimeout
 		}
-
-		logRequest(logStatus, "tokenbucket", "acquire", ps[0].Value, wait, req).Send()
-
 	}
 
 	rep.WriteResponse(w, r, err)
+	logRequest(rep.Status, "tokenbucket", "acquire", ps[0].Value, wait, req).Send()
 }
 
 // TokenBucketDeleteHandler godoc
@@ -88,8 +85,8 @@ func TokenBucketAcquireHandler(w http.ResponseWriter, r *http.Request, ps httpro
 // @Failure 404 {string} Reply "Not Found - token bucket not found"
 // @Router /tokenbucket/{name} [delete]
 func TokenBucketDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	res := DeleteHandler(w, r, ps, deleteTokenBucket)
-	logRequest(res, "tokenbucket", "delete", ps[0].Value, 0, nil).Send()
+	status := DeleteHandler(w, r, ps, deleteTokenBucket)
+	logRequest(status, "tokenbucket", "delete", ps[0].Value, 0, nil).Send()
 }
 
 // TokenBucketStatsHandler godoc
@@ -103,6 +100,6 @@ func TokenBucketDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprou
 // @Failure 404 {string} Reply "Not Found - token bucket not found"
 // @Router /tokenbucket/{name}/stats [get]
 func TokenBucketStatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	res := StatsHandler(w, r, ps, getTokenBucketStats)
-	logRequest(res, "tokenbucket", "stats", ps[0].Value, 0, nil).Send()
+	status := StatsHandler(w, r, ps, getTokenBucketStats)
+	logRequest(status, "tokenbucket", "stats", ps[0].Value, 0, nil).Send()
 }

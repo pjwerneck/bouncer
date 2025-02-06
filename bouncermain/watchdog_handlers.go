@@ -57,6 +57,7 @@ func (r *WatchdogKickRequest) Decode(values url.Values) error {
 func WatchdogWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	var err error
 	var watchdog *Watchdog
+	var wait time.Duration = 0
 
 	req := newWatchdogWaitRequest()
 	rep := newReply()
@@ -69,21 +70,18 @@ func WatchdogWaitHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	if err == nil {
 		start := time.Now()
 		err = watchdog.Wait(req.MaxWait)
-		wait := time.Since(start)
-		logStatus := "success"
+		wait = time.Since(start)
 
 		if errors.Is(err, ErrTimedOut) {
-			logStatus = "timeout"
 			rep.Status = http.StatusRequestTimeout
 		} else if err == nil {
 			rep.Status = http.StatusNoContent
 		}
 
-		logRequest(logStatus, "watchdog", "wait", ps[0].Value, wait, req).Send()
-
 	}
 
 	rep.WriteResponse(w, r, err)
+	logRequest(rep.Status, "watchdog", "wait", ps[0].Value, wait, req).Send()
 }
 
 // WatchdogKickHandler godoc
@@ -111,20 +109,14 @@ func WatchdogKickHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	}
 
 	if err == nil {
-		start := time.Now()
-		err = watchdog.Kick(req.Expires)
-		wait := time.Since(start)
-		logStatus := "success"
-
-		if err == nil {
-			rep.Status = http.StatusNoContent
-		}
-
-		logRequest(logStatus, "watchdog", "kick", ps[0].Value, wait, req).Send()
+		// watchdog kick always succeeds
+		watchdog.Kick(req.Expires)
+		rep.Status = http.StatusNoContent
 
 	}
 
 	rep.WriteResponse(w, r, err)
+	logRequest(rep.Status, "watchdog", "kick", ps[0].Value, 0, req).Send()
 }
 
 // WatchdogDeleteHandler godoc
@@ -137,8 +129,8 @@ func WatchdogKickHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 // @Failure 404 {string} Reply "Not Found - watchdog not found"
 // @Router /watchdog/{name} [delete]
 func WatchdogDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	res := DeleteHandler(w, r, ps, deleteWatchdog)
-	logRequest(res, "watchdog", "delete", ps[0].Value, 0, nil).Send()
+	status := DeleteHandler(w, r, ps, deleteWatchdog)
+	logRequest(status, "watchdog", "delete", ps[0].Value, 0, nil).Send()
 }
 
 // WatchdogStatsHandler godoc
@@ -151,6 +143,6 @@ func WatchdogDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter
 // @Failure 404 {string} Reply "Not Found - watchdog not found"
 // @Router /watchdog/{name}/stats [get]
 func WatchdogStatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	res := StatsHandler(w, r, ps, getWatchdogStats)
-	logRequest(res, "watchdog", "stats", ps[0].Value, 0, nil).Send()
+	status := StatsHandler(w, r, ps, getWatchdogStats)
+	logRequest(status, "watchdog", "stats", ps[0].Value, 0, nil).Send()
 }

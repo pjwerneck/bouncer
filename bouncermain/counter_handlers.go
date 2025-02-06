@@ -71,10 +71,10 @@ func CounterCountHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		rep.Body = fmt.Sprintf("%d", value)
 		rep.Status = http.StatusOK
 
-		logRequest("success", "counter", "count", ps[0].Value, 0, req).Send()
 	}
 
 	rep.WriteResponse(w, r, err)
+	logRequest(rep.Status, "counter", "count", ps[0].Value, 0, req).Send()
 }
 
 // CounterResetHandler godoc
@@ -104,10 +104,10 @@ func CounterResetHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 	if err == nil {
 		counter.Reset(req.Value)
 		rep.Status = http.StatusNoContent
-		logRequest("success", "counter", "reset", ps[0].Value, 0, req).Send()
 	}
 
 	rep.WriteResponse(w, r, err)
+	logRequest(rep.Status, "counter", "reset", ps[0].Value, 0, req).Send()
 }
 
 // CounterValueHandler godoc
@@ -130,10 +130,10 @@ func CounterValueHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 		value := counter.Value()
 		rep.Body = fmt.Sprintf("%d", value)
 		rep.Status = http.StatusOK
-		logRequest("success", "counter", "value", ps[0].Value, 0, nil).Send()
 	}
 
 	rep.WriteResponse(w, r, err)
+	logRequest(rep.Status, "counter", "value", ps[0].Value, 0, nil).Send()
 }
 
 // CounterDeleteHandler godoc
@@ -146,8 +146,8 @@ func CounterValueHandler(w http.ResponseWriter, r *http.Request, ps httprouter.P
 // @Failure 404 {string} Reply "Not Found - counter not found"
 // @Router /counter/{name} [delete]
 func CounterDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	res := DeleteHandler(w, r, ps, deleteCounter)
-	logRequest(res, "counter", "delete", ps[0].Value, 0, nil).Send()
+	status := DeleteHandler(w, r, ps, deleteCounter)
+	logRequest(status, "counter", "delete", ps[0].Value, 0, nil).Send()
 }
 
 // CounterStatsHandler godoc
@@ -160,6 +160,6 @@ func CounterDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprouter.
 // @Failure 404 {string} Reply "Not Found - counter not found"
 // @Router /counter/{name}/stats [get]
 func CounterStatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
-	res := StatsHandler(w, r, ps, getCounterStats)
-	logRequest(res, "counter", "stats", ps[0].Value, 0, nil).Send()
+	status := StatsHandler(w, r, ps, getCounterStats)
+	logRequest(status, "counter", "stats", ps[0].Value, 0, nil).Send()
 }
