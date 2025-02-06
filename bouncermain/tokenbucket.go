@@ -6,12 +6,13 @@ import (
 	"time"
 )
 
+const maxSleepDuration = 5 * time.Second
+
 type TokenBucketStats struct {
-	Acquired        uint64  `json:"acquired"`
-	TotalWaitTime   uint64  `json:"total_wait_time"`
-	AverageWaitTime float64 `json:"average_wait_time"`
-	TimedOut        uint64  `json:"timed_out"`
-	CreatedAt       string  `json:"created_at"`
+	Acquired      uint64 `json:"acquired"`
+	TotalWaitTime uint64 `json:"total_wait_time"`
+	TimedOut      uint64 `json:"timed_out"`
+	CreatedAt     string `json:"created_at"`
 }
 
 type TokenBucket struct {
@@ -19,32 +20,27 @@ type TokenBucket struct {
 	size     uint64        // private field
 	interval time.Duration // private field
 	Stats    *TokenBucketStats
-	acquireC chan bool
-	timer    *time.Timer
-	done     chan struct{}
-	closed   bool
-	mu       sync.RWMutex // protect size, interval, and closed flag
+	mu       sync.RWMutex // protect size and interval
+
+	available  int64 // atomic counter for available tokens
+	nextRefill int64 // atomic unix nano for next refill
 }
 
 var buckets = map[string]*TokenBucket{}
-var bucketsMutex = &sync.Mutex{}
+var bucketsMutex = &sync.RWMutex{}
 
 func newTokenBucket(name string, size uint64, interval time.Duration) (bucket *TokenBucket) {
+	now := time.Now()
 	bucket = &TokenBucket{
-		Name:     name,
-		size:     size,
-		interval: interval,
-		Stats:    &TokenBucketStats{CreatedAt: time.Now().Format(time.RFC3339)},
-		acquireC: make(chan bool),
-		timer:    time.NewTimer(interval),
-		done:     make(chan struct{}),
-		closed:   false,
+		Name:       name,
+		size:       size,
+		interval:   interval,
+		Stats:      &TokenBucketStats{CreatedAt: now.Format(time.RFC3339)},
+		available:  int64(size),
+		nextRefill: now.Add(interval).UnixNano(),
 	}
 
 	buckets[name] = bucket
-
-	go bucket.refill()
-
 	return bucket
 }
 
@@ -75,80 +71,64 @@ func getTokenBucket(name string, size uint64, interval time.Duration) (bucket *T
 	return
 }
 
-func (bucket *TokenBucket) refill() {
+func (bucket *TokenBucket) refillTokens() {
+	now := time.Now().UnixNano()
+	next := atomic.LoadInt64(&bucket.nextRefill)
+
+	// Check if refill is due
+	if now < next {
+		return
+	}
+
+	// Try to update nextRefill - if we fail, someone else already did it
+	if atomic.CompareAndSwapInt64(&bucket.nextRefill, next, now+bucket.interval.Nanoseconds()) {
+		bucket.mu.RLock()
+		size := bucket.size
+		bucket.mu.RUnlock()
+		atomic.StoreInt64(&bucket.available, int64(size))
+	}
+}
+
+func (bucket *TokenBucket) Acquire(maxwait time.Duration, arrival time.Time) error {
+	deadline := time.Now().Add(maxwait)
+
 	for {
-		select {
-		case <-bucket.done:
-			return
-		default:
-			bucket.mu.RLock()
-			size := bucket.size
-			interval := bucket.interval
-			closed := bucket.closed
-			bucket.mu.RUnlock()
+		bucket.refillTokens()
 
-			if closed {
-				return
+		// Try to acquire a token
+		for {
+			current := atomic.LoadInt64(&bucket.available)
+			if current <= 0 {
+				break
 			}
-
-			for n := uint64(0); n < size; n++ {
-				select {
-				case <-bucket.done:
-					return
-				case bucket.acquireC <- true:
-					// token sent successfully
-				}
+			if atomic.CompareAndSwapInt64(&bucket.available, current, current-1) {
+				wait := uint64(time.Since(arrival) / time.Millisecond)
+				atomic.AddUint64(&bucket.Stats.Acquired, 1)
+				atomic.AddUint64(&bucket.Stats.TotalWaitTime, wait)
+				return nil
 			}
-
-			<-bucket.timer.C
-			bucket.timer.Reset(interval)
 		}
+
+		// No tokens available, check timeout
+		if maxwait >= 0 && time.Now().After(deadline) {
+			atomic.AddUint64(&bucket.Stats.TimedOut, 1)
+			return ErrTimedOut
+		}
+
+		// Sleep until next refill or deadline
+		now := time.Now()
+		sleepUntil := time.Unix(0, atomic.LoadInt64(&bucket.nextRefill))
+		if maxwait >= 0 && deadline.Before(sleepUntil) {
+			sleepUntil = deadline
+		}
+
+		time.Sleep(min(sleepUntil.Sub(now), maxSleepDuration))
 	}
-}
-
-// Add these getter methods for size and interval
-func (bucket *TokenBucket) Size() uint64 {
-	bucket.mu.RLock()
-	defer bucket.mu.RUnlock()
-	return bucket.size
-}
-
-func (bucket *TokenBucket) Interval() time.Duration {
-	bucket.mu.RLock()
-	defer bucket.mu.RUnlock()
-	return bucket.interval
-}
-
-func (bucket *TokenBucket) Acquire(maxwait time.Duration, arrival time.Time) (err error) {
-
-	_, err = RecvTimeout(bucket.acquireC, maxwait)
-	if err != nil {
-		atomic.AddUint64(&bucket.Stats.TimedOut, 1)
-		return err
-	}
-
-	wait := uint64(time.Since(arrival) / time.Millisecond)
-
-	atomic.AddUint64(&bucket.Stats.Acquired, 1)
-	atomic.AddUint64(&bucket.Stats.TotalWaitTime, wait)
-
-	// Update average wait time
-	acquired := atomic.LoadUint64(&bucket.Stats.Acquired)
-	totalWait := atomic.LoadUint64(&bucket.Stats.TotalWaitTime)
-	if acquired > 0 {
-		bucket.Stats.AverageWaitTime = float64(totalWait) / float64(acquired)
-	}
-
-	return nil
-}
-
-func (bucket *TokenBucket) GetStats() *TokenBucketStats {
-	return bucket.Stats
 }
 
 func getTokenBucketStats(name string) (stats *TokenBucketStats, err error) {
-	bucketsMutex.Lock()
-	defer bucketsMutex.Unlock()
+	bucketsMutex.RLock()
+	defer bucketsMutex.RUnlock()
 
 	bucket, ok := buckets[name]
 	if !ok {
@@ -162,16 +142,11 @@ func deleteTokenBucket(name string) error {
 	bucketsMutex.Lock()
 	defer bucketsMutex.Unlock()
 
-	bucket, ok := buckets[name]
+	_, ok := buckets[name]
 	if !ok {
 		return ErrNotFound
 	}
 
-	bucket.mu.Lock()
-	bucket.closed = true
-	bucket.mu.Unlock()
-
-	close(bucket.done)    // Signal refill goroutine to stop
 	delete(buckets, name) // Remove from global map
 	return nil
 }

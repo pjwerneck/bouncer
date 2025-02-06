@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"sync/atomic"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
@@ -115,9 +116,24 @@ func TokenBucketDeleteHandler(w http.ResponseWriter, r *http.Request, ps httprou
 func TokenBucketStatsHandler(w http.ResponseWriter, r *http.Request, ps httprouter.Params) {
 	rep := newReply()
 
-	stats, err := getTokenBucketStats(ps[0].Value)
+	bucket, err := getTokenBucket(ps[0].Value, 0, 0)
 	if err == nil {
-		buf, _ := json.Marshal(stats)
+		// Calculate average wait time before marshaling
+		statsMap := map[string]interface{}{
+			"acquired":        bucket.Stats.Acquired,
+			"total_wait_time": bucket.Stats.TotalWaitTime,
+			"timed_out":       bucket.Stats.TimedOut,
+			"created_at":      bucket.Stats.CreatedAt,
+			"available":       atomic.LoadInt64(&bucket.available),
+		}
+
+		if bucket.Stats.Acquired > 0 {
+			statsMap["average_wait_time"] = float64(bucket.Stats.TotalWaitTime) / float64(bucket.Stats.Acquired)
+		} else {
+			statsMap["average_wait_time"] = 0.0
+		}
+
+		buf, _ := json.Marshal(statsMap)
 		rep.Body = string(buf)
 		rep.Status = http.StatusOK
 	}

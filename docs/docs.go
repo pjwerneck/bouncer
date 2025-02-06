@@ -1183,9 +1183,6 @@ const docTemplate = `{
                 "acquired": {
                     "type": "integer"
                 },
-                "average_wait_time": {
-                    "type": "number"
-                },
                 "created_at": {
                     "type": "string"
                 },
