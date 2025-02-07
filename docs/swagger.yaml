@@ -123,7 +123,7 @@ info:
     name: MIT
     url: https://opensource.org/licenses/MIT
   title: Bouncer API
-  version: 0.1.6
+  version: 0.2.0
 paths:
   /.well-known/ready:
     get:
