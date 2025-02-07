@@ -112,23 +112,18 @@ func _addStructFieldsToLog(evt *zerolog.Event, v interface{}) *zerolog.Event {
 	return evt
 }
 
-func logRequest(status int, resourceType string, call string, name string, wait time.Duration, req interface{}) *zerolog.Event {
-	var st string
+var statusDescriptions = map[int]string{
+	http.StatusOK:             "ok",
+	http.StatusNoContent:      "ok",
+	http.StatusNotFound:       "not found",
+	http.StatusConflict:       "conflict",
+	http.StatusRequestTimeout: "timeout",
+	http.StatusBadRequest:     "bad request",
+}
 
-	switch status {
-	case http.StatusOK:
-		st = "ok"
-	case http.StatusNoContent:
-		st = "ok"
-	case http.StatusNotFound:
-		st = "not found"
-	case http.StatusConflict:
-		st = "conflict"
-	case http.StatusRequestTimeout:
-		st = "timeout"
-	case http.StatusBadRequest:
-		st = "bad request"
-	default:
+func logRequest(status int, resourceType string, call string, name string, wait time.Duration, req interface{}) *zerolog.Event {
+	st := statusDescriptions[status]
+	if st == "" {
 		st = "unknown"
 		log.Warn().Int("status", status).Msg("Unknown status code")
 	}
