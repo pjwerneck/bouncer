@@ -25,3 +25,5 @@ _testmain.go
 
 *~
 .cache
+bouncer
+bouncer.code-workspace
